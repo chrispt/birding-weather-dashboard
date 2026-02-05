@@ -1,0 +1,17 @@
+{
+  "name": "birding-weather-dashboard",
+  "version": "1.0.0",
+  "description": "Weather forecast specifically tuned for birders - wind, visibility, pressure trends, and front passage timing",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0"
+  },
+  "dependencies": {
+    "leaflet": "^1.9.4"
+  }
+}
