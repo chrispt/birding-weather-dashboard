@@ -171,23 +171,11 @@ body {
     letter-spacing: 0.1em;
 }
 
-/* Dashboard Grid */
+/* Dashboard - Vertical Stack Layout */
 .dashboard {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--spacing-lg);
-}
-
-@media (max-width: 1024px) {
-    .dashboard {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-@media (max-width: 640px) {
-    .dashboard {
-        grid-template-columns: 1fr;
-    }
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2xl);
 }
 
 /* Widget Cards - Glassmorphism */
@@ -1086,31 +1074,17 @@ body {
     margin-bottom: var(--spacing-md);
 }
 
-/* Weather Section Layout */
-.weather-section {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-lg);
-}
-
-/* Top row: Current Conditions + Wind side by side */
-.weather-row--top {
+/* Weather Grid - Responsive auto-fit layout */
+.weather-grid {
     display: grid;
-    grid-template-columns: 1fr 2fr;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: var(--spacing-lg);
 }
 
-/* Bottom row: Visibility, Precipitation, Pressure */
-.weather-row--bottom {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--spacing-lg);
-}
-
-/* Scores Section Grid */
+/* Scores Section Grid - Responsive auto-fit layout */
 .dashboard-section__grid--scores {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: var(--spacing-lg);
 }
 
@@ -1216,32 +1190,8 @@ body {
 
 /* Responsive adjustments */
 
-/* Large desktop - scores get 4 columns (default above) */
-
-/* Medium desktop (1200px and below) */
-@media (max-width: 1200px) {
-    .dashboard-section__grid--scores {
-        grid-template-columns: repeat(3, 1fr);
-    }
-}
-
-/* Tablet (1024px and below) */
-@media (max-width: 1024px) {
-    .dashboard-section__grid--scores {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
 /* Tablet landscape / small desktop (900px and below) */
 @media (max-width: 900px) {
-    .weather-row--top {
-        grid-template-columns: 1fr;
-    }
-
-    .weather-row--bottom {
-        grid-template-columns: 1fr 1fr;
-    }
-
     .wind-widget__content {
         flex-direction: column;
         align-items: center;
@@ -1281,14 +1231,6 @@ body {
 
 /* Small mobile (640px and below) */
 @media (max-width: 640px) {
-    .weather-row--bottom {
-        grid-template-columns: 1fr;
-    }
-
-    .dashboard-section__grid--scores {
-        grid-template-columns: 1fr;
-    }
-
     .score-gauge {
         width: 110px;
         height: 110px;
