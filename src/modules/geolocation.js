@@ -129,9 +129,11 @@ export async function searchAddress(query) {
                 parts.push(addr.road);
             }
 
-            // Include city/town
-            if (addr.city || addr.town || addr.village || addr.hamlet) {
-                parts.push(addr.city || addr.town || addr.village || addr.hamlet);
+            // Include city/town (check multiple fields for rural areas)
+            const locality = addr.city || addr.town || addr.village || addr.hamlet ||
+                             addr.municipality || addr.county || addr.suburb;
+            if (locality) {
+                parts.push(locality);
             }
 
             // Include state
