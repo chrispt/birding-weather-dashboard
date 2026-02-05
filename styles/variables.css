@@ -108,6 +108,41 @@
     --z-tooltip: 400;
 }
 
+/* Light theme (day mode) - toggled via night mode button */
+body.night-mode {
+    /* Background gradient - light blue/gray */
+    --bg-gradient: linear-gradient(135deg, #e8f4f8 0%, #d4e8f2 50%, #e0eef5 100%);
+    --bg-solid: #e8f4f8;
+
+    /* Glass effect - dark borders for light bg */
+    --glass-bg: rgba(0, 0, 0, 0.03);
+    --glass-bg-hover: rgba(0, 0, 0, 0.06);
+    --glass-border: rgba(0, 0, 0, 0.08);
+    --glass-border-hover: rgba(0, 0, 0, 0.15);
+
+    /* Text colors - dark text on light bg */
+    --color-text-primary: rgba(0, 0, 0, 0.9);
+    --color-text-secondary: rgba(0, 0, 0, 0.6);
+    --color-text-muted: rgba(0, 0, 0, 0.4);
+
+    /* Legacy compatibility */
+    --color-bg: var(--bg-solid);
+    --color-bg-card: var(--glass-bg);
+    --color-bg-card-hover: var(--glass-bg-hover);
+    --color-border: var(--glass-border);
+    --color-border-light: rgba(0, 0, 0, 0.03);
+
+    /* Shadows for light theme */
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.15);
+    --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.2);
+
+    /* Glows need to be more subtle on light bg */
+    --glow-blue: 0 0 20px rgba(0, 212, 255, 0.2);
+    --glow-green: 0 0 20px rgba(0, 255, 136, 0.2);
+    --glow-purple: 0 0 20px rgba(168, 85, 247, 0.2);
+}
+
 /* Score color classes */
 .score--excellent { color: var(--score-excellent); }
 .score--good { color: var(--score-good); }
