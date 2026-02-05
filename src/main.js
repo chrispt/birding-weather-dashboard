@@ -96,6 +96,7 @@ const elements = {
     recentLocations: document.getElementById('recent-locations'),
     recentDivider: document.getElementById('recent-divider'),
     recentLabel: document.getElementById('recent-label'),
+    clearRecentLocations: document.getElementById('clear-recent-locations'),
 
     // Settings form
     ebirdApiKey: document.getElementById('ebird-api-key'),
@@ -178,6 +179,7 @@ function setupEventListeners() {
     elements.useCurrentLocation.addEventListener('click', handleUseCurrentLocation);
     elements.saveCurrentLocation.addEventListener('click', handleSaveCurrentLocation);
     elements.locationSearch.addEventListener('input', debounce(handleLocationSearch, 300));
+    elements.clearRecentLocations.addEventListener('click', handleClearRecentLocations);
 
     // Close dropdown when clicking outside
     document.addEventListener('click', (e) => {
@@ -1074,6 +1076,12 @@ function addRecentLocation(lat, lon, name) {
     recent = recent.slice(0, MAX_RECENT_LOCATIONS);
 
     localStorage.setItem(RECENT_LOCATIONS_KEY, JSON.stringify(recent));
+}
+
+function handleClearRecentLocations(e) {
+    e.stopPropagation();
+    localStorage.removeItem(RECENT_LOCATIONS_KEY);
+    renderRecentLocations();
 }
 
 function renderRecentLocations() {

@@ -171,6 +171,27 @@ body {
     color: var(--color-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.1em;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.location-dropdown__label .clear-btn {
+    padding: 2px 8px;
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    font-size: var(--font-size-xs);
+    text-transform: none;
+    letter-spacing: normal;
+    opacity: 0.7;
+    transition: all var(--transition-fast);
+}
+
+.location-dropdown__label .clear-btn:hover {
+    opacity: 1;
+    color: var(--color-error);
 }
 
 .location-dropdown__search {
