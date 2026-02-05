@@ -105,10 +105,6 @@ const elements = {
     pressureUnit: document.getElementById('pressure-unit'),
     mapTileMode: document.getElementById('map-tile-mode'),
 
-    // Map toggle
-    mapStyleToggle: document.getElementById('map-style-toggle'),
-    mapToggleIcon: document.getElementById('map-toggle-icon'),
-
     // Score details modal
     scoreModal: document.getElementById('score-details-modal'),
     closeScoreModal: document.getElementById('close-score-modal'),
@@ -177,11 +173,6 @@ function setupEventListeners() {
     });
 
     elements.saveSettings.addEventListener('click', saveSettings);
-
-    // Map style toggle
-    if (elements.mapStyleToggle) {
-        elements.mapStyleToggle.addEventListener('click', handleMapStyleToggle);
-    }
 
     // Location dropdown
     elements.locationDropdownBtn.addEventListener('click', toggleLocationDropdown);
@@ -826,11 +817,14 @@ function initMap() {
 
     if (!lat || !lon) return;
 
-    map = L.map('map').setView([lat, lon], 10);
+    map = L.map('map').setView([lat, lon], 11);
 
     // Add tile layer based on stored preference
     const tileMode = store.get('mapTileMode') || 'dark';
     switchMapTileLayer(tileMode);
+
+    // Add map style toggle control
+    addMapStyleControl(tileMode);
 
     // Add user marker with custom icon
     userMarker = L.marker([lat, lon], {
@@ -839,6 +833,47 @@ function initMap() {
     }).addTo(map);
 
     userMarker.bindPopup('<strong>📍 Your Location</strong>').openPopup();
+}
+
+let mapStyleControl = null;
+
+/**
+ * Add map style toggle as a Leaflet control
+ */
+function addMapStyleControl(initialMode) {
+    const MapStyleControl = L.Control.extend({
+        options: { position: 'topright' },
+
+        onAdd: function() {
+            const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control map-style-control');
+            const button = L.DomUtil.create('a', '', container);
+            button.href = '#';
+            button.title = 'Change map style';
+            button.innerHTML = `<span class="map-style-icon">${MAP_TILES[initialMode]?.icon || '🌙'}</span>`;
+            button.setAttribute('role', 'button');
+            button.setAttribute('aria-label', 'Change map style');
+
+            L.DomEvent.disableClickPropagation(container);
+            L.DomEvent.on(button, 'click', function(e) {
+                L.DomEvent.preventDefault(e);
+                handleMapStyleToggle();
+            });
+
+            this._button = button;
+            return container;
+        },
+
+        updateIcon: function(mode) {
+            if (this._button) {
+                const icon = MAP_TILES[mode]?.icon || '🌙';
+                this._button.innerHTML = `<span class="map-style-icon">${icon}</span>`;
+                this._button.title = `Map: ${mode.charAt(0).toUpperCase() + mode.slice(1)} (click to change)`;
+            }
+        }
+    });
+
+    mapStyleControl = new MapStyleControl();
+    map.addControl(mapStyleControl);
 }
 
 /**
@@ -925,20 +960,8 @@ function handleMapStyleToggle() {
  * Update the map toggle button icon based on current style
  */
 function updateMapToggleIcon(mode) {
-    if (elements.mapToggleIcon) {
-        const tileConfig = MAP_TILES[mode] || MAP_TILES.dark;
-        elements.mapToggleIcon.textContent = tileConfig.icon;
-    }
-    // Update tooltip to show current style
-    if (elements.mapStyleToggle) {
-        const styleNames = {
-            dark: 'Dark',
-            light: 'Light',
-            osm: 'OpenStreetMap',
-            satellite: 'Satellite',
-            terrain: 'Terrain'
-        };
-        elements.mapStyleToggle.title = `Map: ${styleNames[mode] || 'Dark'} (click to change)`;
+    if (mapStyleControl) {
+        mapStyleControl.updateIcon(mode);
     }
 }
 

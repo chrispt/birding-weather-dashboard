@@ -715,36 +715,34 @@ body {
     border: 1px solid var(--glass-border);
 }
 
-/* Map Style Toggle Button */
-.map-style-toggle {
-    position: absolute;
-    top: var(--spacing-sm);
-    right: var(--spacing-sm);
-    z-index: 1000;
-    width: 36px;
-    height: 36px;
-    border-radius: var(--radius-md);
-    background: var(--glass-bg);
+/* Map Style Toggle Control (Leaflet) */
+.map-style-control {
+    margin-top: 10px !important;
+}
+
+.map-style-control a {
+    width: 30px !important;
+    height: 30px !important;
+    line-height: 30px !important;
+    background: var(--glass-bg) !important;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border: 1px solid var(--glass-border);
-    color: var(--color-text-primary);
-    cursor: pointer;
-    display: flex;
+    border: 1px solid var(--glass-border) !important;
+    color: var(--color-text-primary) !important;
+    display: flex !important;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
-    transition: all var(--transition-fast);
+    text-decoration: none !important;
 }
 
-.map-style-toggle:hover {
-    background: var(--glass-bg-hover);
-    border-color: var(--accent-blue);
-    transform: scale(1.05);
+.map-style-control a:hover {
+    background: var(--glass-bg-hover) !important;
+    border-color: var(--accent-blue) !important;
 }
 
-#map-widget {
-    position: relative;
+.map-style-icon {
+    font-size: 16px;
+    line-height: 1;
 }
 
 /* Leaflet map dark theme overrides */
