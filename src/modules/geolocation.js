@@ -89,6 +89,36 @@ export async function reverseGeocode(lat, lon) {
 }
 
 /**
+ * Get approximate location from IP address (fast, city-level accuracy)
+ * @returns {Promise<{lat: number, lon: number, name: string}|null>}
+ */
+async function getIpLocation() {
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+        const response = await fetch('http://ip-api.com/json/?fields=lat,lon,city,regionName,country', {
+            signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) return null;
+
+        const data = await response.json();
+        if (data.lat && data.lon) {
+            const name = data.country === 'United States'
+                ? `${data.city}, ${data.regionName}`
+                : `${data.city}, ${data.country}`;
+            return { lat: data.lat, lon: data.lon, name };
+        }
+    } catch (error) {
+        console.warn('IP geolocation failed:', error);
+    }
+    return null;
+}
+
+/**
  * Initialize location - uses stored location immediately, then fetches GPS in background
  * @param {Function} onLocationUpdate - Optional callback when GPS returns different location
  * @returns {Promise<boolean>} True if location was obtained (from stored or GPS)
@@ -111,9 +141,24 @@ export async function initializeLocation(onLocationUpdate = null) {
         return true;
     }
 
-    // No stored location - must wait for GPS
-    const position = await getCurrentPosition();
+    // No stored location - try IP geolocation first (fast)
+    const ipLocation = await getIpLocation();
+    if (ipLocation) {
+        store.update({
+            userLat: ipLocation.lat,
+            userLon: ipLocation.lon,
+            locationName: ipLocation.name
+        });
+        store.set('isLoading', false);
+        saveLastLocation(ipLocation.lat, ipLocation.lon, ipLocation.name);
 
+        // Still fetch GPS in background for accuracy
+        fetchGpsInBackground(ipLocation, onLocationUpdate);
+        return true;
+    }
+
+    // IP failed - fall back to GPS (slow)
+    const position = await getCurrentPosition();
     if (position) {
         store.update({
             userLat: position.lat,

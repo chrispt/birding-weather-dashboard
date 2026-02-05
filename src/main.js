@@ -183,6 +183,12 @@ function setupEventListeners() {
         elements.locationName.textContent = name || 'Unknown location';
     });
 
+    // Initialize location text from store (subscription doesn't fire for existing values)
+    const currentLocationName = store.get('locationName');
+    if (currentLocationName) {
+        elements.locationName.textContent = currentLocationName;
+    }
+
     // Score details modal - click handlers for score widgets
     document.querySelectorAll('.widget--score[data-score-type]').forEach(widget => {
         widget.addEventListener('click', () => {
