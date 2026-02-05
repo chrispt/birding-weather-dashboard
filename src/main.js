@@ -412,7 +412,7 @@ function renderHotspots(hotspots) {
 
     // Add click handlers
     elements.hotspots.querySelectorAll('.hotspot-card').forEach(card => {
-        card.addEventListener('click', () => {
+        card.addEventListener('click', async () => {
             const lat = parseFloat(card.dataset.lat);
             const lon = parseFloat(card.dataset.lon);
             const name = card.dataset.name;
@@ -422,9 +422,9 @@ function renderHotspots(hotspots) {
                 map.setView([lat, lon], 14);
             }
 
-            // Could also fetch weather for this location
-            // setLocation(lat, lon, name);
-            // loadWeatherData();
+            // Fetch weather for this hotspot
+            await setLocation(lat, lon, name);
+            await loadWeatherData();
         });
     });
 }
@@ -468,9 +468,14 @@ function updateMapHotspots(hotspots) {
             title: h.name
         }).addTo(map);
 
+        const escapedName = h.name.replace(/'/g, "\\'");
         marker.bindPopup(`
             <strong>${h.name}</strong><br>
-            ${h.speciesCount || '?'} species
+            ${h.speciesCount || '?'} species<br>
+            <button class="btn btn--primary" style="margin-top:8px;padding:4px 8px;font-size:12px;cursor:pointer;"
+                    onclick="window.loadHotspotWeather(${h.lat}, ${h.lon}, '${escapedName}')">
+                Check Weather
+            </button>
         `);
 
         hotspotMarkers.push(marker);
@@ -551,6 +556,12 @@ function saveSettings() {
     // Reload data with new settings
     handleRefresh();
 }
+
+// Expose function for map popup buttons
+window.loadHotspotWeather = async (lat, lon, name) => {
+    await setLocation(lat, lon, name);
+    await loadWeatherData();
+};
 
 // Initialize on load
 document.addEventListener('DOMContentLoaded', init);
