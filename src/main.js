@@ -9,7 +9,7 @@ import { fetchNearbyHotspots } from './api/ebird.js';
 import {
     scoreHawkWatch,
     scoreSeabirding,
-    scoreSongbirdMigration,
+    scoreSongbirds,
     scoreShorebirds,
     scoreWaterfowl,
     scoreOwling,
@@ -256,12 +256,13 @@ function calculateBirdingConditions(weatherData) {
     );
     store.set('seabirdScore', seabird);
 
-    // Songbird migration score
-    const songbird = scoreSongbirdMigration(
+    // Songbird score (migration + activity/visibility)
+    const songbird = scoreSongbirds(
         current.windDirection,
         windSpeedMph,
         current.temperature,
         pressure.trend,
+        current.weatherCode,
         getSeason()
     );
     store.set('songbirdScore', songbird);

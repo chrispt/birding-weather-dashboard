@@ -117,59 +117,83 @@ export function scoreSeabirding(windDir, windSpeed, precipitation, coastOrientat
 }
 
 /**
- * Songbird Migration Scoring
- * Ideal: S/SW winds in spring, NW winds in fall, light-moderate speed, rising pressure
+ * Songbird Score (combined migration potential + activity/visibility)
+ * Combines factors that bring birds (migration) with factors that make them findable (activity)
  * @param {number} windDir - Wind direction in degrees
  * @param {number} windSpeed - Wind speed in mph
  * @param {number} temp - Temperature in Fahrenheit
  * @param {string} pressureTrend - 'rising', 'falling', 'steady', etc.
+ * @param {number} weatherCode - WMO weather code
  * @param {string} season - 'spring', 'fall', or 'winter'
  * @returns {object} Score and rating
  */
-export function scoreSongbirdMigration(windDir, windSpeed, temp, pressureTrend, season = 'spring') {
-    let score = 45;
+export function scoreSongbirds(windDir, windSpeed, temp, pressureTrend, weatherCode, season = 'spring') {
+    let score = 40;
     const details = [];
 
-    // Wind direction (seasonal)
+    // === MIGRATION FACTORS (can birds arrive?) - ~25 pts max ===
+
+    // Wind direction (seasonal) - 15 pts max
     const favorableDir = season === 'spring'
         ? isWindInRange(windDir, 135, 270)  // S/SW winds in spring
         : isWindInRange(windDir, 270, 45);   // NW/N winds in fall
 
     if (favorableDir) {
-        score += 20;
-        details.push('Favorable wind direction');
-    } else {
-        score -= 10;
-        details.push('Unfavorable wind direction');
-    }
-
-    // Wind speed (light-moderate best for migration)
-    if (windSpeed >= 5 && windSpeed <= 15) {
         score += 15;
-        details.push('Ideal wind speed');
-    } else if (windSpeed > 25) {
-        score -= 15;
-        details.push('Winds too strong');
-    } else if (windSpeed < 5) {
-        score += 5;
-        details.push('Calm conditions');
+        details.push('Favorable winds for migration');
     }
 
-    // Temperature (45-65°F optimal for migration)
-    if (temp >= 45 && temp <= 65) {
+    // Pressure trend - 15 pts max
+    // Rising-fast = post-front = birds concentrated (best for finding!)
+    // Rising = birds active and moving
+    if (pressureTrend === 'rising-fast') {
+        score += 15;
+        details.push('Post-front conditions - birds concentrated');
+    } else if (pressureTrend === 'rising') {
         score += 10;
-        details.push('Good migration temps');
-    } else if (temp < 35 || temp > 75) {
-        score -= 5;
-    }
-
-    // Pressure trend (rising = birds moving)
-    if (pressureTrend === 'rising' || pressureTrend === 'rising-fast') {
-        score += 10;
-        details.push('Rising pressure - birds moving');
+        details.push('Rising pressure - birds active');
     } else if (pressureTrend === 'falling-fast') {
+        score -= 5;
+        details.push('Storm approaching');
+    }
+
+    // === ACTIVITY/VISIBILITY FACTORS (can I find them?) - ~50 pts max ===
+
+    // Weather conditions - 20 pts max
+    // Clear/partly cloudy = active foraging
+    if (weatherCode <= 2) {
+        score += 20;
+        details.push('Clear skies - birds active');
+    } else if (weatherCode === 3) {
+        score += 15;
+        details.push('Overcast - extended activity');
+    } else if (weatherCode >= 45 && weatherCode < 50) {
+        score += 5;
+        details.push('Foggy - check sheltered areas');
+    } else if (weatherCode >= 50) {
         score -= 10;
-        details.push('Falling pressure - birds grounded');
+        details.push('Precipitation - birds sheltering');
+    }
+
+    // Temperature - 10 pts max (affects activity level)
+    if (temp >= 45 && temp <= 70) {
+        score += 10;
+        details.push('Ideal temps for activity');
+    } else if (temp < 35) {
+        score += 5;
+        details.push('Cold - check feeders');
+    } else if (temp > 80) {
+        score -= 5;
+        details.push('Hot - reduced midday activity');
+    }
+
+    // Wind speed - 10 pts max (calm = more visible)
+    if (windSpeed < 10) {
+        score += 10;
+        details.push('Calm winds - easy spotting');
+    } else if (windSpeed > 20) {
+        score -= 10;
+        details.push('Windy - birds hunkered down');
     }
 
     score = Math.max(0, Math.min(100, score));
