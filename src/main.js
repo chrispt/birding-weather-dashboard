@@ -826,7 +826,7 @@ function initMap() {
 
     if (!lat || !lon) return;
 
-    map = L.map('map').setView([lat, lon], 11);
+    map = L.map('map').setView([lat, lon], 10);
 
     // Add tile layer based on stored preference
     const tileMode = store.get('mapTileMode') || 'dark';
@@ -1255,7 +1255,7 @@ function renderRecentLocations() {
             await loadWeatherData();
 
             if (map) {
-                map.setView([lat, lon], 11);
+                map.setView([lat, lon], 10);
                 updateUserMarker(lat, lon);
             }
         });
@@ -1343,7 +1343,7 @@ function renderSavedLocations() {
             await loadWeatherData();
 
             if (map) {
-                map.setView([lat, lon], 11);
+                map.setView([lat, lon], 10);
                 updateUserMarker(lat, lon);
             }
         });
@@ -1405,7 +1405,7 @@ async function handleLocationSearch(e) {
             await loadHotspots();
 
             if (map) {
-                map.setView([lat, lon], 11);
+                map.setView([lat, lon], 10);
                 updateUserMarker(lat, lon);
             }
         });
