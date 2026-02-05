@@ -180,11 +180,28 @@ export function scoreSongbirdMigration(windDir, pressureTrend, season) {
  * @param {number} temp - Temperature in Fahrenheit
  * @param {number} weatherCode - WMO weather code
  * @param {number} windSpeed - Wind speed in mph
+ * @param {number} hour - Hour of day (0-23)
  * @returns {object} Score and rating
  */
-export function scoreSongbirdActivity(temp, weatherCode, windSpeed) {
+export function scoreSongbirdActivity(temp, weatherCode, windSpeed, hour = 7) {
     let score = 40;
     const details = [];
+
+    // Time of day - songbirds most active at dawn and dusk
+    const isDawn = hour >= 5 && hour < 9;
+    const isDusk = hour >= 17 && hour < 20;
+    const isMidday = hour >= 12 && hour < 15;
+
+    if (isDawn) {
+        score += 15;
+        details.push('Dawn chorus - peak activity');
+    } else if (isDusk) {
+        score += 10;
+        details.push('Evening activity');
+    } else if (isMidday) {
+        score -= 10;
+        details.push('Midday lull');
+    }
 
     // Weather conditions - 25 pts max
     if (weatherCode <= 2) {
@@ -368,16 +385,33 @@ export function scoreWaterfowl(temp, windSpeed, visibility, pressureTrend) {
 
 /**
  * Owling/Nocturnal Scoring
- * Ideal: Calm winds, cool temps, clear skies, low humidity
+ * Ideal: Calm winds, cool temps, clear skies, low humidity, NIGHTTIME
  * @param {number} windSpeed - Wind speed in mph
  * @param {number} temp - Temperature in Fahrenheit
  * @param {number} weatherCode - WMO weather code
  * @param {number} humidity - Relative humidity percentage
+ * @param {number} hour - Hour of day (0-23)
  * @returns {object} Score and rating
  */
-export function scoreOwling(windSpeed, temp, weatherCode, humidity) {
+export function scoreOwling(windSpeed, temp, weatherCode, humidity, hour = 21) {
     let score = 45;
     const details = [];
+
+    // Time of day - critical for owling
+    const isNight = hour >= 20 || hour < 6;
+    const isTwilight = (hour >= 6 && hour < 10) || (hour >= 18 && hour < 20);
+    const isDaytime = hour >= 10 && hour < 18;
+
+    if (isNight) {
+        score += 30;
+        details.push('Prime owling hours');
+    } else if (isTwilight) {
+        score += 10;
+        details.push('Twilight - some owl activity');
+    } else if (isDaytime) {
+        score -= 40;
+        details.push('Daytime - owls roosting');
+    }
 
     // Calm winds essential
     if (windSpeed < 8) {

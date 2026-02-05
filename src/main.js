@@ -271,6 +271,9 @@ function getSeason() {
 function calculateBirdingConditions(weatherData) {
     const { current, pressureHistory, tempHistory, precipLast6h } = weatherData;
 
+    // Get current hour for time-sensitive scores
+    const hour = new Date().getHours();
+
     // Convert wind speed to mph for scoring
     const windSpeedMph = convertWindSpeed(current.windSpeed, 'mph');
 
@@ -306,7 +309,8 @@ function calculateBirdingConditions(weatherData) {
     const songbirdActivity = scoreSongbirdActivity(
         current.temperature,
         current.weatherCode,
-        windSpeedMph
+        windSpeedMph,
+        hour
     );
     store.set('songbirdActivityScore', songbirdActivity);
 
@@ -333,7 +337,8 @@ function calculateBirdingConditions(weatherData) {
         windSpeedMph,
         current.temperature,
         current.weatherCode,
-        current.humidity
+        current.humidity,
+        hour
     );
     store.set('owlingScore', owling);
 
@@ -1003,6 +1008,7 @@ function renderRecentLocations() {
 
 // Expose function for map popup buttons
 window.loadHotspotWeather = async (lat, lon, name) => {
+    if (map) map.closePopup();
     addRecentLocation(lat, lon, name);
     await setLocation(lat, lon, name);
     await loadWeatherData();
