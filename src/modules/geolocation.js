@@ -243,10 +243,17 @@ export async function searchAddress(query) {
             }
 
             // Include city/town (check multiple fields for rural areas)
-            const locality = addr.city || addr.town || addr.village || addr.hamlet ||
-                             addr.municipality || addr.county || addr.suburb;
-            if (locality) {
-                parts.push(locality);
+            // Nominatim uses different fields depending on location type
+            // 'place' is used for small named locations like unincorporated communities
+            const specificLocality = addr.city || addr.town || addr.village || addr.hamlet ||
+                                     addr.place || addr.locality || addr.neighbourhood || addr.suburb;
+            const broaderLocality = addr.municipality || addr.county;
+
+            // Prefer specific locality (town name) over broader (county)
+            if (specificLocality) {
+                parts.push(specificLocality);
+            } else if (broaderLocality) {
+                parts.push(broaderLocality);
             }
 
             // Include state
