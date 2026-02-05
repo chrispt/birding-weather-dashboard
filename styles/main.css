@@ -336,8 +336,12 @@ body {
     stroke: url(#seabirdGradient);
 }
 
-.gauge-fill--songbird {
-    stroke: url(#songbirdGradient);
+.gauge-fill--songbird-migration {
+    stroke: url(#songbirdMigrationGradient);
+}
+
+.gauge-fill--songbird-activity {
+    stroke: url(#songbirdActivityGradient);
 }
 
 .gauge-fill--shorebird {

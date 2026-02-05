@@ -9,7 +9,8 @@ import { fetchNearbyHotspots } from './api/ebird.js';
 import {
     scoreHawkWatch,
     scoreSeabirding,
-    scoreSongbirds,
+    scoreSongbirdMigration,
+    scoreSongbirdActivity,
     scoreShorebirds,
     scoreWaterfowl,
     scoreOwling,
@@ -256,16 +257,21 @@ function calculateBirdingConditions(weatherData) {
     );
     store.set('seabirdScore', seabird);
 
-    // Songbird score (migration + activity/visibility)
-    const songbird = scoreSongbirds(
+    // Songbird Migration score (returns null outside migration season)
+    const songbirdMigration = scoreSongbirdMigration(
         current.windDirection,
-        windSpeedMph,
-        current.temperature,
         pressure.trend,
-        current.weatherCode,
         getSeason()
     );
-    store.set('songbirdScore', songbird);
+    store.set('songbirdMigrationScore', songbirdMigration);
+
+    // Songbird Activity score (year-round)
+    const songbirdActivity = scoreSongbirdActivity(
+        current.temperature,
+        current.weatherCode,
+        windSpeedMph
+    );
+    store.set('songbirdActivityScore', songbirdActivity);
 
     // Shorebird score
     const shorebird = scoreShorebirds(
@@ -377,14 +383,24 @@ function renderScores() {
     const scoreTypes = [
         { type: 'hawk', storeKey: 'hawkWatchScore', detailsId: 'hawk-details' },
         { type: 'seabird', storeKey: 'seabirdScore', detailsId: 'seabird-details' },
-        { type: 'songbird', storeKey: 'songbirdScore', detailsId: 'songbird-details' },
+        { type: 'songbird-migration', storeKey: 'songbirdMigrationScore', detailsId: 'songbird-migration-details', widgetId: 'songbird-migration-widget' },
+        { type: 'songbird-activity', storeKey: 'songbirdActivityScore', detailsId: 'songbird-activity-details' },
         { type: 'shorebird', storeKey: 'shorebirdScore', detailsId: 'shorebird-details' },
         { type: 'waterfowl', storeKey: 'waterfowlScore', detailsId: 'waterfowl-details' },
         { type: 'owling', storeKey: 'owlingScore', detailsId: 'owling-details' }
     ];
 
-    scoreTypes.forEach(({ type, storeKey, detailsId }) => {
+    scoreTypes.forEach(({ type, storeKey, detailsId, widgetId }) => {
         const scoreData = store.get(storeKey);
+
+        // Handle migration widget visibility (hide when not in season)
+        if (widgetId) {
+            const widget = document.getElementById(widgetId);
+            if (widget) {
+                widget.style.display = scoreData ? '' : 'none';
+            }
+        }
+
         if (scoreData) {
             updateScoreGauge(type, scoreData);
             const detailsEl = document.getElementById(detailsId);

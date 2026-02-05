@@ -117,83 +117,124 @@ export function scoreSeabirding(windDir, windSpeed, precipitation, coastOrientat
 }
 
 /**
- * Songbird Score (combined migration potential + activity/visibility)
- * Combines factors that bring birds (migration) with factors that make them findable (activity)
+ * Songbird Migration Score (Spring/Fall only)
+ * Factors that affect whether migrants are arriving/present
  * @param {number} windDir - Wind direction in degrees
- * @param {number} windSpeed - Wind speed in mph
- * @param {number} temp - Temperature in Fahrenheit
  * @param {string} pressureTrend - 'rising', 'falling', 'steady', etc.
- * @param {number} weatherCode - WMO weather code
  * @param {string} season - 'spring', 'fall', or 'winter'
- * @returns {object} Score and rating
+ * @returns {object|null} Score and rating, or null if not migration season
  */
-export function scoreSongbirds(windDir, windSpeed, temp, pressureTrend, weatherCode, season = 'spring') {
+export function scoreSongbirdMigration(windDir, pressureTrend, season) {
+    // Return null if not in migration season
+    if (season !== 'spring' && season !== 'fall') {
+        return null;
+    }
+
     let score = 40;
     const details = [];
 
-    // === MIGRATION FACTORS (can birds arrive?) - ~25 pts max ===
-
-    // Wind direction (seasonal) - 15 pts max
+    // Wind direction (seasonal) - 20 pts max
     const favorableDir = season === 'spring'
         ? isWindInRange(windDir, 135, 270)  // S/SW winds in spring
         : isWindInRange(windDir, 270, 45);   // NW/N winds in fall
 
     if (favorableDir) {
-        score += 15;
+        score += 20;
         details.push('Favorable winds for migration');
+    } else {
+        score -= 5;
+        details.push('Headwinds slowing migration');
     }
 
-    // Pressure trend - 15 pts max
-    // Rising-fast = post-front = birds concentrated (best for finding!)
-    // Rising = birds active and moving
+    // Pressure trend - 20 pts max
+    // Rising-fast = post-front = birds concentrated (best!)
     if (pressureTrend === 'rising-fast') {
-        score += 15;
-        details.push('Post-front conditions - birds concentrated');
+        score += 20;
+        details.push('Post-front - migrants concentrated');
     } else if (pressureTrend === 'rising') {
-        score += 10;
-        details.push('Rising pressure - birds active');
+        score += 15;
+        details.push('Rising pressure - birds moving');
+    } else if (pressureTrend === 'falling') {
+        score += 5;
+        details.push('Pre-front conditions');
     } else if (pressureTrend === 'falling-fast') {
         score -= 5;
-        details.push('Storm approaching');
+        details.push('Storm approaching - birds grounded');
+    } else {
+        score += 10;
+        details.push('Steady conditions');
     }
 
-    // === ACTIVITY/VISIBILITY FACTORS (can I find them?) - ~50 pts max ===
+    score = Math.max(0, Math.min(100, score));
 
-    // Weather conditions - 20 pts max
-    // Clear/partly cloudy = active foraging
+    return {
+        score,
+        rating: getScoreRating(score),
+        details
+    };
+}
+
+/**
+ * Songbird Activity Score (Year-round)
+ * Factors that affect whether birds are visible/active
+ * @param {number} temp - Temperature in Fahrenheit
+ * @param {number} weatherCode - WMO weather code
+ * @param {number} windSpeed - Wind speed in mph
+ * @returns {object} Score and rating
+ */
+export function scoreSongbirdActivity(temp, weatherCode, windSpeed) {
+    let score = 40;
+    const details = [];
+
+    // Weather conditions - 25 pts max
     if (weatherCode <= 2) {
-        score += 20;
+        score += 25;
         details.push('Clear skies - birds active');
     } else if (weatherCode === 3) {
-        score += 15;
+        score += 20;
         details.push('Overcast - extended activity');
     } else if (weatherCode >= 45 && weatherCode < 50) {
-        score += 5;
+        score += 10;
         details.push('Foggy - check sheltered areas');
-    } else if (weatherCode >= 50) {
-        score -= 10;
-        details.push('Precipitation - birds sheltering');
+    } else if (weatherCode >= 50 && weatherCode < 80) {
+        score -= 5;
+        details.push('Light precip - reduced activity');
+    } else if (weatherCode >= 80) {
+        score -= 15;
+        details.push('Heavy precip - birds sheltering');
     }
 
-    // Temperature - 10 pts max (affects activity level)
-    if (temp >= 45 && temp <= 70) {
-        score += 10;
+    // Temperature - 15 pts max
+    if (temp >= 50 && temp <= 75) {
+        score += 15;
         details.push('Ideal temps for activity');
-    } else if (temp < 35) {
+    } else if (temp >= 40 && temp < 50) {
+        score += 10;
+        details.push('Cool - morning activity best');
+    } else if (temp < 40) {
         score += 5;
         details.push('Cold - check feeders');
-    } else if (temp > 80) {
-        score -= 5;
-        details.push('Hot - reduced midday activity');
+    } else if (temp > 85) {
+        score -= 10;
+        details.push('Hot - early morning only');
+    } else if (temp > 75) {
+        score += 5;
+        details.push('Warm - avoid midday');
     }
 
-    // Wind speed - 10 pts max (calm = more visible)
-    if (windSpeed < 10) {
-        score += 10;
+    // Wind speed - 15 pts max
+    if (windSpeed < 8) {
+        score += 15;
         details.push('Calm winds - easy spotting');
-    } else if (windSpeed > 20) {
-        score -= 10;
-        details.push('Windy - birds hunkered down');
+    } else if (windSpeed < 15) {
+        score += 10;
+        details.push('Light winds - good conditions');
+    } else if (windSpeed > 25) {
+        score -= 15;
+        details.push('Very windy - birds hunkered down');
+    } else if (windSpeed > 18) {
+        score -= 5;
+        details.push('Breezy - check sheltered spots');
     }
 
     score = Math.max(0, Math.min(100, score));

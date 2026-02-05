@@ -132,29 +132,54 @@
                 <div class="widget__subtitle" id="seabird-details"></div>
             </div>
 
-            <!-- Songbird Migration Score -->
-            <div class="widget" id="songbird-widget">
+            <!-- Songbird Migration Score (hidden outside migration seasons) -->
+            <div class="widget" id="songbird-migration-widget">
                 <div class="widget__header">
                     <span class="widget__title">Songbird Migration</span>
                 </div>
-                <div class="score-gauge" id="songbird-score">
+                <div class="score-gauge" id="songbird-migration-score">
                     <svg viewBox="0 0 120 120" class="gauge-svg">
                         <defs>
-                            <linearGradient id="songbirdGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <linearGradient id="songbirdMigrationGradient" x1="0%" y1="0%" x2="100%" y2="0%">
                                 <stop offset="0%" stop-color="var(--accent-green)"/>
                                 <stop offset="100%" stop-color="var(--accent-cyan)"/>
                             </linearGradient>
                         </defs>
                         <circle cx="60" cy="60" r="50" class="gauge-bg"/>
-                        <circle cx="60" cy="60" r="50" class="gauge-fill gauge-fill--songbird" id="songbird-gauge-fill"
+                        <circle cx="60" cy="60" r="50" class="gauge-fill gauge-fill--songbird-migration" id="songbird-migration-gauge-fill"
                                 stroke-dasharray="314" stroke-dashoffset="314"/>
                     </svg>
                     <div class="gauge-center">
-                        <span class="gauge-value" id="songbird-gauge-value">--</span>
-                        <span class="gauge-rating" id="songbird-gauge-rating"></span>
+                        <span class="gauge-value" id="songbird-migration-gauge-value">--</span>
+                        <span class="gauge-rating" id="songbird-migration-gauge-rating"></span>
                     </div>
                 </div>
-                <div class="widget__subtitle" id="songbird-details"></div>
+                <div class="widget__subtitle" id="songbird-migration-details"></div>
+            </div>
+
+            <!-- Songbird Activity Score (year-round) -->
+            <div class="widget" id="songbird-activity-widget">
+                <div class="widget__header">
+                    <span class="widget__title">Songbird Activity</span>
+                </div>
+                <div class="score-gauge" id="songbird-activity-score">
+                    <svg viewBox="0 0 120 120" class="gauge-svg">
+                        <defs>
+                            <linearGradient id="songbirdActivityGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="var(--accent-yellow)"/>
+                                <stop offset="100%" stop-color="var(--accent-green)"/>
+                            </linearGradient>
+                        </defs>
+                        <circle cx="60" cy="60" r="50" class="gauge-bg"/>
+                        <circle cx="60" cy="60" r="50" class="gauge-fill gauge-fill--songbird-activity" id="songbird-activity-gauge-fill"
+                                stroke-dasharray="314" stroke-dashoffset="314"/>
+                    </svg>
+                    <div class="gauge-center">
+                        <span class="gauge-value" id="songbird-activity-gauge-value">--</span>
+                        <span class="gauge-rating" id="songbird-activity-gauge-rating"></span>
+                    </div>
+                </div>
+                <div class="widget__subtitle" id="songbird-activity-details"></div>
             </div>
 
             <!-- Shorebird Score -->
