@@ -1074,11 +1074,32 @@ body {
     margin-bottom: var(--spacing-md);
 }
 
-/* Weather Grid - Responsive auto-fit layout */
+/* Weather Grid - Force 5 columns on desktop */
 .weather-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: var(--spacing-lg);
+    grid-template-columns: repeat(5, 1fr);
+    gap: var(--spacing-md);
+}
+
+/* Responsive: 3 columns on tablet */
+@media (max-width: 1200px) {
+    .weather-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* Responsive: 2 columns on small tablet */
+@media (max-width: 800px) {
+    .weather-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Responsive: Stack on mobile */
+@media (max-width: 600px) {
+    .weather-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* Scores Section Grid - Responsive auto-fit layout */
