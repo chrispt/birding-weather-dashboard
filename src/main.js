@@ -42,6 +42,7 @@ const elements = {
     currentTemp: document.getElementById('current-temp'),
     currentConditions: document.getElementById('current-conditions'),
     currentHumidity: document.getElementById('current-humidity'),
+    weatherIcon: document.getElementById('weather-icon'),
 
     // Scores
     hawkScore: document.getElementById('hawk-score'),
@@ -266,14 +267,20 @@ function renderWeatherData(weatherData) {
     elements.currentConditions.textContent = getWeatherDescription(current.weatherCode);
     elements.currentHumidity.textContent = `Humidity: ${current.humidity}%`;
 
+    // Update weather icon
+    updateWeatherIcon(current.weatherCode);
+
     // Wind
     elements.windSpeed.textContent = formatWindSpeed(current.windSpeed);
-    elements.windDirection.textContent = `Direction: ${formatWindDirection(current.windDirection)}`;
-    elements.windGusts.textContent = `Gusts: ${formatWindSpeed(current.windGusts)}`;
+    elements.windDirection.textContent = formatWindDirection(current.windDirection);
+    elements.windGusts.textContent = formatWindSpeed(current.windGusts);
 
-    // Wind arrow rotation (point in direction wind is coming FROM)
-    const rotation = current.windDirection + 180;
-    elements.windArrow.style.transform = `translate(-50%, -100%) rotate(${rotation}deg)`;
+    // Update wind compass arrow (SVG rotation)
+    // Wind direction is where wind comes FROM, arrow should point in that direction
+    const rotation = current.windDirection;
+    if (elements.windArrow) {
+        elements.windArrow.style.transform = `rotate(${rotation}deg)`;
+    }
 
     // Visibility
     elements.visibilityValue.textContent = formatVisibility(current.visibility);
@@ -311,31 +318,103 @@ function renderWeatherData(weatherData) {
 }
 
 /**
- * Render birding scores
+ * Render birding scores with animated gauges
  */
 function renderScores() {
     const hawkWatch = store.get('hawkWatchScore');
     const seabird = store.get('seabirdScore');
 
     if (hawkWatch) {
-        const scoreEl = elements.hawkScore;
-        scoreEl.querySelector('.score__value').textContent = hawkWatch.score;
-        scoreEl.querySelector('.score__rating').textContent = hawkWatch.rating;
-        scoreEl.className = `score score--${hawkWatch.rating.toLowerCase()}`;
+        updateScoreGauge('hawk', hawkWatch);
         elements.hawkDetails.textContent = hawkWatch.details[0] || '';
     }
 
     if (seabird) {
-        const scoreEl = elements.seabirdScore;
-        scoreEl.querySelector('.score__value').textContent = seabird.score;
-        scoreEl.querySelector('.score__rating').textContent = seabird.rating;
-        scoreEl.className = `score score--${seabird.rating.toLowerCase()}`;
+        updateScoreGauge('seabird', seabird);
         elements.seabirdDetails.textContent = seabird.details[0] || '';
     }
 }
 
 /**
- * Render pressure chart
+ * Update weather icon based on weather code
+ */
+function updateWeatherIcon(weatherCode) {
+    if (!elements.weatherIcon) return;
+
+    // Map weather codes to icons and classes
+    // WMO Weather interpretation codes
+    const iconMap = {
+        0: { icon: '☀️', class: 'sunny' },      // Clear sky
+        1: { icon: '🌤️', class: 'sunny' },      // Mainly clear
+        2: { icon: '⛅', class: 'cloudy' },      // Partly cloudy
+        3: { icon: '☁️', class: 'cloudy' },      // Overcast
+        45: { icon: '🌫️', class: 'cloudy' },    // Fog
+        48: { icon: '🌫️', class: 'cloudy' },    // Depositing rime fog
+        51: { icon: '🌧️', class: 'rainy' },     // Light drizzle
+        53: { icon: '🌧️', class: 'rainy' },     // Moderate drizzle
+        55: { icon: '🌧️', class: 'rainy' },     // Dense drizzle
+        61: { icon: '🌧️', class: 'rainy' },     // Slight rain
+        63: { icon: '🌧️', class: 'rainy' },     // Moderate rain
+        65: { icon: '🌧️', class: 'rainy' },     // Heavy rain
+        71: { icon: '🌨️', class: 'rainy' },     // Slight snow
+        73: { icon: '🌨️', class: 'rainy' },     // Moderate snow
+        75: { icon: '🌨️', class: 'rainy' },     // Heavy snow
+        77: { icon: '🌨️', class: 'rainy' },     // Snow grains
+        80: { icon: '🌦️', class: 'rainy' },     // Slight rain showers
+        81: { icon: '🌦️', class: 'rainy' },     // Moderate rain showers
+        82: { icon: '🌦️', class: 'rainy' },     // Violent rain showers
+        85: { icon: '🌨️', class: 'rainy' },     // Slight snow showers
+        86: { icon: '🌨️', class: 'rainy' },     // Heavy snow showers
+        95: { icon: '⛈️', class: 'stormy' },    // Thunderstorm
+        96: { icon: '⛈️', class: 'stormy' },    // Thunderstorm with slight hail
+        99: { icon: '⛈️', class: 'stormy' }     // Thunderstorm with heavy hail
+    };
+
+    const weather = iconMap[weatherCode] || { icon: '🌡️', class: 'cloudy' };
+
+    // Update icon
+    const iconSymbol = elements.weatherIcon.querySelector('.weather-icon__symbol');
+    if (iconSymbol) {
+        iconSymbol.textContent = weather.icon;
+    }
+
+    // Update class for glow effect
+    elements.weatherIcon.className = `weather-icon weather-icon--${weather.class}`;
+}
+
+/**
+ * Update a score gauge with animation
+ */
+function updateScoreGauge(type, scoreData) {
+    const gaugeFill = document.getElementById(`${type}-gauge-fill`);
+    const gaugeValue = document.getElementById(`${type}-gauge-value`);
+    const gaugeRating = document.getElementById(`${type}-gauge-rating`);
+
+    if (!gaugeFill || !gaugeValue || !gaugeRating) return;
+
+    const score = scoreData.score;
+    const rating = scoreData.rating.toLowerCase();
+
+    // Update displayed value
+    gaugeValue.textContent = score;
+    gaugeRating.textContent = scoreData.rating;
+
+    // Set rating color class
+    gaugeRating.className = `gauge-rating gauge-rating--${rating}`;
+
+    // Calculate stroke-dashoffset for the score
+    // Circumference = 2 * π * 50 ≈ 314
+    const circumference = 314;
+    const offset = circumference - (score / 100) * circumference;
+
+    // Animate the gauge fill
+    requestAnimationFrame(() => {
+        gaugeFill.style.strokeDashoffset = offset;
+    });
+}
+
+/**
+ * Render pressure chart as smooth SVG curve
  */
 function renderPressureChart() {
     const history = store.get('pressureHistory') || [];
@@ -346,10 +425,38 @@ function renderPressureChart() {
     const max = Math.max(...pressures);
     const range = max - min || 1;
 
-    elements.pressureChart.innerHTML = pressures.map(p => {
-        const height = ((p - min) / range) * 50 + 10; // 10-60px height
-        return `<div class="pressure-chart__bar" style="height: ${height}px;"></div>`;
-    }).join('');
+    // Build SVG path points
+    const points = pressures.map((p, i) => {
+        const x = (i / (pressures.length - 1)) * 100;
+        const y = 100 - ((p - min) / range) * 80 - 10; // 10-90 range, inverted for SVG
+        return `${x},${y}`;
+    });
+
+    // Create smooth curve using the points
+    const pathPoints = points.join(' ');
+
+    // Get pressure trend for gradient color
+    const pressureTrend = store.get('pressureTrend');
+    const trendColor = pressureTrend?.trend === 'falling' || pressureTrend?.trend === 'falling_fast'
+        ? 'var(--accent-orange)'
+        : 'var(--accent-blue)';
+
+    elements.pressureChart.innerHTML = `
+        <svg viewBox="0 0 100 100" class="pressure-chart-svg" preserveAspectRatio="none">
+            <defs>
+                <linearGradient id="pressureGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="${trendColor}" stop-opacity="0.4"/>
+                    <stop offset="100%" stop-color="${trendColor}" stop-opacity="0"/>
+                </linearGradient>
+            </defs>
+            <!-- Area fill -->
+            <polygon points="0,100 ${pathPoints} 100,100" fill="url(#pressureGradient)" class="pressure-area"/>
+            <!-- Line -->
+            <polyline points="${pathPoints}" class="pressure-line" style="stroke: ${trendColor}"/>
+            <!-- End dot -->
+            <circle cx="${points[points.length - 1].split(',')[0]}" cy="${points[points.length - 1].split(',')[1]}" r="3" class="pressure-dot" style="fill: ${trendColor}"/>
+        </svg>
+    `;
 }
 
 /**
@@ -454,6 +561,44 @@ function renderHotspots(hotspots) {
 }
 
 /**
+ * Create custom marker icon
+ */
+function createMarkerIcon(type = 'hotspot') {
+    const colors = {
+        user: { bg: '#00d4ff', border: '#00f5d4' },
+        hotspot: { bg: '#a855f7', border: '#ff6b9d' }
+    };
+    const color = colors[type] || colors.hotspot;
+
+    return L.divIcon({
+        className: 'custom-marker',
+        html: `
+            <div class="marker-pin marker-pin--${type}" style="
+                width: 24px;
+                height: 24px;
+                background: ${color.bg};
+                border: 2px solid ${color.border};
+                border-radius: 50%;
+                box-shadow: 0 0 15px ${color.bg}80;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            ">
+                <div style="
+                    width: 8px;
+                    height: 8px;
+                    background: white;
+                    border-radius: 50%;
+                "></div>
+            </div>
+        `,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12],
+        popupAnchor: [0, -12]
+    });
+}
+
+/**
  * Initialize Leaflet map
  */
 function initMap() {
@@ -464,16 +609,18 @@ function initMap() {
 
     map = L.map('map').setView([lat, lon], 11);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        maxZoom: 19
     }).addTo(map);
 
-    // Add user marker
+    // Add user marker with custom icon
     userMarker = L.marker([lat, lon], {
-        title: 'Your Location'
+        title: 'Your Location',
+        icon: createMarkerIcon('user')
     }).addTo(map);
 
-    userMarker.bindPopup('Your Location').openPopup();
+    userMarker.bindPopup('<strong>📍 Your Location</strong>').openPopup();
 }
 
 /**
@@ -486,10 +633,11 @@ function updateMapHotspots(hotspots) {
     hotspotMarkers.forEach(m => map.removeLayer(m));
     hotspotMarkers = [];
 
-    // Add new markers
+    // Add new markers with custom icons
     hotspots.forEach(h => {
         const marker = L.marker([h.lat, h.lon], {
-            title: h.name
+            title: h.name,
+            icon: createMarkerIcon('hotspot')
         }).addTo(map);
 
         const escapedName = h.name.replace(/'/g, "\\'");

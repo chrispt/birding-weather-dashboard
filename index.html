@@ -66,9 +66,16 @@
                 <div class="widget__header">
                     <span class="widget__title">Current Conditions</span>
                 </div>
-                <div class="widget__value" id="current-temp">--°F</div>
-                <div class="widget__subtitle" id="current-conditions">Loading...</div>
-                <div class="widget__subtitle" id="current-humidity"></div>
+                <div class="current-weather">
+                    <div class="weather-icon" id="weather-icon">
+                        <span class="weather-icon__symbol">☀️</span>
+                    </div>
+                    <div class="current-weather__data">
+                        <div class="widget__value" id="current-temp">--°F</div>
+                        <div class="widget__subtitle" id="current-conditions">Loading...</div>
+                        <div class="widget__subtitle" id="current-humidity"></div>
+                    </div>
+                </div>
             </div>
 
             <!-- Hawk Watch Score -->
@@ -76,9 +83,24 @@
                 <div class="widget__header">
                     <span class="widget__title">Hawk Watch</span>
                 </div>
-                <div class="score" id="hawk-score">
-                    <span class="score__value">--</span>
-                    <span class="score__rating"></span>
+                <div class="score-gauge" id="hawk-score">
+                    <svg viewBox="0 0 120 120" class="gauge-svg">
+                        <defs>
+                            <linearGradient id="hawkGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="var(--accent-purple)"/>
+                                <stop offset="100%" stop-color="var(--accent-blue)"/>
+                            </linearGradient>
+                        </defs>
+                        <!-- Background arc -->
+                        <circle cx="60" cy="60" r="50" class="gauge-bg"/>
+                        <!-- Score arc (animated) -->
+                        <circle cx="60" cy="60" r="50" class="gauge-fill gauge-fill--hawk" id="hawk-gauge-fill"
+                                stroke-dasharray="314" stroke-dashoffset="314"/>
+                    </svg>
+                    <div class="gauge-center">
+                        <span class="gauge-value" id="hawk-gauge-value">--</span>
+                        <span class="gauge-rating" id="hawk-gauge-rating"></span>
+                    </div>
                 </div>
                 <div class="widget__subtitle" id="hawk-details"></div>
             </div>
@@ -88,9 +110,24 @@
                 <div class="widget__header">
                     <span class="widget__title">Seabird/Coastal</span>
                 </div>
-                <div class="score" id="seabird-score">
-                    <span class="score__value">--</span>
-                    <span class="score__rating"></span>
+                <div class="score-gauge" id="seabird-score">
+                    <svg viewBox="0 0 120 120" class="gauge-svg">
+                        <defs>
+                            <linearGradient id="seabirdGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="var(--accent-blue)"/>
+                                <stop offset="100%" stop-color="var(--accent-cyan)"/>
+                            </linearGradient>
+                        </defs>
+                        <!-- Background arc -->
+                        <circle cx="60" cy="60" r="50" class="gauge-bg"/>
+                        <!-- Score arc (animated) -->
+                        <circle cx="60" cy="60" r="50" class="gauge-fill gauge-fill--seabird" id="seabird-gauge-fill"
+                                stroke-dasharray="314" stroke-dashoffset="314"/>
+                    </svg>
+                    <div class="gauge-center">
+                        <span class="gauge-value" id="seabird-gauge-value">--</span>
+                        <span class="gauge-rating" id="seabird-gauge-rating"></span>
+                    </div>
                 </div>
                 <div class="widget__subtitle" id="seabird-details"></div>
             </div>
@@ -100,15 +137,59 @@
                 <div class="widget__header">
                     <span class="widget__title">Wind</span>
                 </div>
-                <div style="display: flex; align-items: center; gap: 2rem;">
-                    <div class="wind-rose" id="wind-rose">
-                        <div class="wind-rose__arrow" id="wind-arrow"></div>
-                        <div class="wind-rose__center"></div>
+                <div class="wind-widget__content">
+                    <div class="wind-compass">
+                        <svg viewBox="0 0 200 200" class="compass-svg">
+                            <!-- Outer ring -->
+                            <circle cx="100" cy="100" r="90" class="compass-ring"/>
+                            <circle cx="100" cy="100" r="85" class="compass-ring-inner"/>
+
+                            <!-- Tick marks -->
+                            <g class="compass-ticks">
+                                <!-- Major ticks (N, E, S, W) -->
+                                <line x1="100" y1="15" x2="100" y2="25" class="compass-tick compass-tick--major"/>
+                                <line x1="185" y1="100" x2="175" y2="100" class="compass-tick compass-tick--major"/>
+                                <line x1="100" y1="185" x2="100" y2="175" class="compass-tick compass-tick--major"/>
+                                <line x1="15" y1="100" x2="25" y2="100" class="compass-tick compass-tick--major"/>
+                                <!-- Minor ticks (NE, SE, SW, NW) -->
+                                <line x1="160" y1="40" x2="153" y2="47" class="compass-tick"/>
+                                <line x1="160" y1="160" x2="153" y2="153" class="compass-tick"/>
+                                <line x1="40" y1="160" x2="47" y2="153" class="compass-tick"/>
+                                <line x1="40" y1="40" x2="47" y2="47" class="compass-tick"/>
+                            </g>
+
+                            <!-- Cardinal direction labels -->
+                            <text x="100" y="45" class="compass-label">N</text>
+                            <text x="160" y="105" class="compass-label">E</text>
+                            <text x="100" y="168" class="compass-label">S</text>
+                            <text x="40" y="105" class="compass-label">W</text>
+
+                            <!-- Animated arrow group -->
+                            <g class="compass-arrow" id="wind-arrow">
+                                <!-- Arrow pointing up (North) - will be rotated -->
+                                <polygon points="100,25 92,90 100,80 108,90" class="compass-arrow-head"/>
+                                <polygon points="100,175 92,110 100,120 108,110" class="compass-arrow-tail"/>
+                                <circle cx="100" cy="100" r="10" class="compass-center"/>
+                            </g>
+                        </svg>
+                        <div class="wind-speed-overlay">
+                            <span class="wind-speed-value" id="wind-speed-value">--</span>
+                            <span class="wind-speed-unit" id="wind-speed-unit">mph</span>
+                        </div>
                     </div>
-                    <div>
-                        <div class="widget__value" id="wind-speed">-- mph</div>
-                        <div class="widget__subtitle" id="wind-direction">Direction: --</div>
-                        <div class="widget__subtitle" id="wind-gusts">Gusts: --</div>
+                    <div class="wind-details">
+                        <div class="wind-detail">
+                            <span class="wind-detail__label">Speed</span>
+                            <span class="wind-detail__value" id="wind-speed">-- mph</span>
+                        </div>
+                        <div class="wind-detail">
+                            <span class="wind-detail__label">Direction</span>
+                            <span class="wind-detail__value" id="wind-direction">--</span>
+                        </div>
+                        <div class="wind-detail">
+                            <span class="wind-detail__label">Gusts</span>
+                            <span class="wind-detail__value" id="wind-gusts">--</span>
+                        </div>
                     </div>
                 </div>
             </div>
