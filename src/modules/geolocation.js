@@ -118,21 +118,34 @@ export async function searchAddress(query) {
         const data = await response.json();
 
         return data.map(item => {
-            // Build a cleaner display name
+            // Build a cleaner display name including street address
             const addr = item.address || {};
             const parts = [];
 
+            // Include street address if present
+            if (addr.house_number && addr.road) {
+                parts.push(`${addr.house_number} ${addr.road}`);
+            } else if (addr.road) {
+                parts.push(addr.road);
+            }
+
+            // Include city/town
             if (addr.city || addr.town || addr.village || addr.hamlet) {
                 parts.push(addr.city || addr.town || addr.village || addr.hamlet);
             }
+
+            // Include state
             if (addr.state) {
                 parts.push(addr.state);
             }
+
+            // Include country if not US
             if (addr.country_code && addr.country_code !== 'us') {
                 parts.push(addr.country);
             }
 
-            const name = parts.length > 0 ? parts.join(', ') : item.display_name.split(',').slice(0, 2).join(',');
+            // Fallback to display_name if we couldn't build a name
+            const name = parts.length > 0 ? parts.join(', ') : item.display_name;
 
             return {
                 lat: parseFloat(item.lat),
