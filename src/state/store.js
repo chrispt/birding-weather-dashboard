@@ -44,7 +44,8 @@ const initialState = {
     ebirdApiKey: '',
     tempUnit: 'F',
     speedUnit: 'mph',
-    pressureUnit: 'inHg'
+    pressureUnit: 'inHg',
+    mapTileMode: 'dark'
 };
 
 // Keys that should be persisted to localStorage
@@ -53,7 +54,8 @@ const PERSISTED_KEYS = [
     'ebirdApiKey',
     'tempUnit',
     'speedUnit',
-    'pressureUnit'
+    'pressureUnit',
+    'mapTileMode'
 ];
 
 class Store {
@@ -197,7 +199,7 @@ class Store {
         });
 
         // Load string preferences
-        const stringKeys = ['ebirdApiKey', 'tempUnit', 'speedUnit', 'pressureUnit'];
+        const stringKeys = ['ebirdApiKey', 'tempUnit', 'speedUnit', 'pressureUnit', 'mapTileMode'];
         stringKeys.forEach(key => {
             const storageKey = STORAGE_KEYS[this._toStorageKeyName(key)];
             const stored = localStorage.getItem(storageKey || key);

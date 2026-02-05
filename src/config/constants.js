@@ -33,6 +33,7 @@ export const STORAGE_KEYS = {
     TEMP_UNIT: 'birdingWeather_tempUnit',
     SPEED_UNIT: 'birdingWeather_speedUnit',
     PRESSURE_UNIT: 'birdingWeather_pressureUnit',
+    MAP_TILE_MODE: 'birdingWeather_mapTileMode',
     LAST_LOCATION: 'birdingWeather_lastLocation'
 };
 

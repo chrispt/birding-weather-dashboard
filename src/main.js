@@ -103,6 +103,7 @@ const elements = {
     tempUnit: document.getElementById('temp-unit'),
     speedUnit: document.getElementById('speed-unit'),
     pressureUnit: document.getElementById('pressure-unit'),
+    mapTileMode: document.getElementById('map-tile-mode'),
 
     // Score details modal
     scoreModal: document.getElementById('score-details-modal'),
@@ -117,6 +118,7 @@ const elements = {
 let map = null;
 let userMarker = null;
 let hotspotMarkers = [];
+let currentTileLayer = null;
 
 /**
  * Initialize the application
@@ -752,9 +754,10 @@ function renderHotspots(hotspots) {
             const lon = parseFloat(card.dataset.lon);
             const name = card.dataset.name;
 
-            // Center map on hotspot
+            // Center map on hotspot and update user marker
             if (map) {
                 map.setView([lat, lon], 14);
+                updateUserMarker(lat, lon);
             }
 
             // Add to recent locations and fetch weather
@@ -816,10 +819,9 @@ function initMap() {
 
     map = L.map('map').setView([lat, lon], 11);
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        maxZoom: 19
-    }).addTo(map);
+    // Add tile layer based on stored preference
+    const tileMode = store.get('mapTileMode') || 'dark';
+    switchMapTileLayer(tileMode);
 
     // Add user marker with custom icon
     userMarker = L.marker([lat, lon], {
@@ -828,6 +830,44 @@ function initMap() {
     }).addTo(map);
 
     userMarker.bindPopup('<strong>📍 Your Location</strong>').openPopup();
+}
+
+/**
+ * Switch map tile layer between light and dark modes
+ */
+function switchMapTileLayer(mode) {
+    if (!map) return;
+
+    const tileUrls = {
+        dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
+    };
+
+    if (currentTileLayer) {
+        map.removeLayer(currentTileLayer);
+    }
+
+    currentTileLayer = L.tileLayer(tileUrls[mode] || tileUrls.dark, {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        maxZoom: 19
+    }).addTo(map);
+}
+
+/**
+ * Update user marker position on the map
+ */
+function updateUserMarker(lat, lon) {
+    if (!map) return;
+
+    if (userMarker) {
+        userMarker.setLatLng([lat, lon]);
+    } else {
+        userMarker = L.marker([lat, lon], {
+            title: 'Your Location',
+            icon: createMarkerIcon('user')
+        }).addTo(map);
+        userMarker.bindPopup('<strong>📍 Your Location</strong>');
+    }
 }
 
 /**
@@ -965,15 +1005,22 @@ function loadSettingsForm() {
     elements.tempUnit.value = store.get('tempUnit') || 'F';
     elements.speedUnit.value = store.get('speedUnit') || 'mph';
     elements.pressureUnit.value = store.get('pressureUnit') || 'inHg';
+    elements.mapTileMode.value = store.get('mapTileMode') || 'dark';
 }
 
 function saveSettings() {
+    const newTileMode = elements.mapTileMode.value;
+
     store.update({
         ebirdApiKey: elements.ebirdApiKey.value.trim(),
         tempUnit: elements.tempUnit.value,
         speedUnit: elements.speedUnit.value,
-        pressureUnit: elements.pressureUnit.value
+        pressureUnit: elements.pressureUnit.value,
+        mapTileMode: newTileMode
     });
+
+    // Update map tile layer if changed
+    switchMapTileLayer(newTileMode);
 
     elements.settingsModal.classList.remove('visible');
 
@@ -1038,9 +1085,7 @@ async function handleUseCurrentLocation() {
             // Center map on new location
             if (map) {
                 map.setView([latitude, longitude], 11);
-                if (userMarker) {
-                    userMarker.setLatLng([latitude, longitude]);
-                }
+                updateUserMarker(latitude, longitude);
             }
         },
         (error) => {
@@ -1119,6 +1164,7 @@ function renderRecentLocations() {
 
             if (map) {
                 map.setView([lat, lon], 11);
+                updateUserMarker(lat, lon);
             }
         });
     });
@@ -1206,6 +1252,7 @@ function renderSavedLocations() {
 
             if (map) {
                 map.setView([lat, lon], 11);
+                updateUserMarker(lat, lon);
             }
         });
     });
@@ -1267,6 +1314,7 @@ async function handleLocationSearch(e) {
 
             if (map) {
                 map.setView([lat, lon], 11);
+                updateUserMarker(lat, lon);
             }
         });
     });
@@ -1274,7 +1322,10 @@ async function handleLocationSearch(e) {
 
 // Expose function for map popup buttons
 window.loadHotspotWeather = async (lat, lon, name) => {
-    if (map) map.closePopup();
+    if (map) {
+        map.closePopup();
+        updateUserMarker(lat, lon);
+    }
     addRecentLocation(lat, lon, name);
     // Reset coastal status for new location
     store.update({ isCoastalLocation: null, coastType: null });
