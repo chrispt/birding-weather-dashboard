@@ -105,6 +105,10 @@ const elements = {
     pressureUnit: document.getElementById('pressure-unit'),
     mapTileMode: document.getElementById('map-tile-mode'),
 
+    // Map toggle
+    mapStyleToggle: document.getElementById('map-style-toggle'),
+    mapToggleIcon: document.getElementById('map-toggle-icon'),
+
     // Score details modal
     scoreModal: document.getElementById('score-details-modal'),
     closeScoreModal: document.getElementById('close-score-modal'),
@@ -173,6 +177,11 @@ function setupEventListeners() {
     });
 
     elements.saveSettings.addEventListener('click', saveSettings);
+
+    // Map style toggle
+    if (elements.mapStyleToggle) {
+        elements.mapStyleToggle.addEventListener('click', handleMapStyleToggle);
+    }
 
     // Location dropdown
     elements.locationDropdownBtn.addEventListener('click', toggleLocationDropdown);
@@ -854,6 +863,37 @@ function switchMapTileLayer(mode) {
 }
 
 /**
+ * Handle map style toggle button click
+ */
+function handleMapStyleToggle() {
+    const currentMode = store.get('mapTileMode') || 'dark';
+    const newMode = currentMode === 'dark' ? 'light' : 'dark';
+
+    // Update store (persists to localStorage)
+    store.set('mapTileMode', newMode);
+
+    // Switch map tiles
+    switchMapTileLayer(newMode);
+
+    // Update toggle icon
+    updateMapToggleIcon(newMode);
+
+    // Sync with settings form
+    if (elements.mapTileMode) {
+        elements.mapTileMode.value = newMode;
+    }
+}
+
+/**
+ * Update the map toggle button icon
+ */
+function updateMapToggleIcon(mode) {
+    if (elements.mapToggleIcon) {
+        elements.mapToggleIcon.textContent = mode === 'dark' ? '🌙' : '☀️';
+    }
+}
+
+/**
  * Update user marker position on the map
  */
 function updateUserMarker(lat, lon) {
@@ -1005,7 +1045,9 @@ function loadSettingsForm() {
     elements.tempUnit.value = store.get('tempUnit') || 'F';
     elements.speedUnit.value = store.get('speedUnit') || 'mph';
     elements.pressureUnit.value = store.get('pressureUnit') || 'inHg';
-    elements.mapTileMode.value = store.get('mapTileMode') || 'dark';
+    const mapMode = store.get('mapTileMode') || 'dark';
+    elements.mapTileMode.value = mapMode;
+    updateMapToggleIcon(mapMode);
 }
 
 function saveSettings() {
@@ -1021,6 +1063,7 @@ function saveSettings() {
 
     // Update map tile layer if changed
     switchMapTileLayer(newTileMode);
+    updateMapToggleIcon(newTileMode);
 
     elements.settingsModal.classList.remove('visible');
 
