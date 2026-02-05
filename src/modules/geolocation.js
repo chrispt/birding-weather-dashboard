@@ -6,57 +6,15 @@ import store from '../state/store.js';
 import { STORAGE_KEYS } from '../config/constants.js';
 
 /**
- * Approximate US coastal boundaries for determining if a location is coastal
- * Uses simplified polygon boundaries - within 50 miles (~80km) of coast = coastal
- */
-const COAST_DISTANCE_KM = 80;
-
-/**
  * Check if a location is coastal (within ~50 miles of ocean)
- * Uses a simple API-based approach with OpenStreetMap/Nominatim
+ * Uses coordinate-based heuristics for fast, reliable detection
  * @param {number} lat - Latitude
  * @param {number} lon - Longitude
  * @returns {Promise<{isCoastal: boolean, coastType: string|null}>}
  */
 export async function checkCoastalLocation(lat, lon) {
-    try {
-        // Use Overpass API to find nearest coastline
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-        // Query for coastline within 80km radius
-        const overpassQuery = `
-            [out:json][timeout:5];
-            way["natural"="coastline"](around:${COAST_DISTANCE_KM * 1000},${lat},${lon});
-            out count;
-        `;
-
-        const response = await fetch('https://overpass-api.de/api/interpreter', {
-            method: 'POST',
-            body: overpassQuery,
-            signal: controller.signal
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-            // Fallback to coordinate-based heuristic
-            return checkCoastalByCoordinates(lat, lon);
-        }
-
-        const data = await response.json();
-        const hasCoast = data.elements && data.elements.length > 0;
-
-        if (hasCoast) {
-            const coastType = determineCoastType(lat, lon);
-            return { isCoastal: true, coastType };
-        }
-
-        return { isCoastal: false, coastType: null };
-    } catch (error) {
-        console.warn('Coastal check failed, using coordinate fallback:', error);
-        return checkCoastalByCoordinates(lat, lon);
-    }
+    // Use coordinate-based heuristic (fast and reliable for US)
+    return checkCoastalByCoordinates(lat, lon);
 }
 
 /**
