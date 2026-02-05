@@ -627,6 +627,7 @@ async function loadHotspots() {
 
     if (error) {
         console.warn('Failed to fetch hotspots:', error);
+        elements.hotspots.innerHTML = `<p style="color: var(--color-text-secondary);">${error.message || 'Failed to load hotspots'}</p>`;
         return;
     }
 
