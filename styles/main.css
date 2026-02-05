@@ -1062,7 +1062,226 @@ body {
 .fallout-moderate { color: var(--color-fallout-moderate); }
 .fallout-low { color: var(--color-fallout-low); }
 
+/* ==================== DASHBOARD SECTIONS ==================== */
+
+.dashboard-section {
+    margin-bottom: var(--spacing-2xl);
+}
+
+.section-header {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin-bottom: var(--spacing-sm);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.section-subheader {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+    margin-top: calc(-1 * var(--spacing-xs));
+    margin-bottom: var(--spacing-md);
+}
+
+/* Weather Section Grid */
+.dashboard-section__grid--weather {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    grid-template-rows: auto auto;
+    gap: var(--spacing-lg);
+}
+
+.dashboard-section__grid--weather #current-widget {
+    grid-row: 1 / 2;
+    grid-column: 1;
+}
+
+.dashboard-section__grid--weather #wind-widget {
+    grid-row: 1 / 2;
+    grid-column: 2;
+}
+
+.dashboard-section__grid--weather #visibility-widget,
+.dashboard-section__grid--weather #precip-widget,
+.dashboard-section__grid--weather #pressure-widget {
+    /* Auto-placed in second row */
+}
+
+/* Make weather widgets in second row form a 3-column sub-grid */
+.dashboard-section__grid--weather {
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+}
+
+.dashboard-section__grid--weather #current-widget {
+    grid-column: 1 / 2;
+}
+
+.dashboard-section__grid--weather #wind-widget {
+    grid-column: 2 / 4;
+}
+
+.dashboard-section__grid--weather #visibility-widget {
+    grid-column: 4 / 5;
+}
+
+.dashboard-section__grid--weather #precip-widget {
+    grid-column: 5 / 6;
+}
+
+.dashboard-section__grid--weather #pressure-widget {
+    grid-column: 1 / 3;
+    grid-row: 2;
+}
+
+/* Scores Section Grid */
+.dashboard-section__grid--scores {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-lg);
+}
+
+/* Score widgets are clickable */
+.widget--score {
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.widget--score:hover {
+    border-color: var(--glass-border-hover);
+    transform: translateY(-2px);
+}
+
+.widget--score:active {
+    transform: translateY(0);
+}
+
+/* ==================== SCORE DETAILS MODAL ==================== */
+
+.score-modal__gauge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+    padding: var(--spacing-lg);
+    background: var(--glass-bg);
+    border-radius: var(--radius-lg);
+}
+
+.score-modal__value {
+    font-size: var(--font-size-4xl);
+    font-weight: 700;
+    color: var(--color-text-primary);
+    line-height: 1;
+}
+
+.score-modal__rating {
+    font-size: var(--font-size-lg);
+    font-weight: 500;
+    margin-top: var(--spacing-xs);
+}
+
+.score-modal__section {
+    margin-bottom: var(--spacing-lg);
+}
+
+.score-modal__section-title {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: var(--spacing-md);
+}
+
+.score-modal__factors {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.score-modal__factors li {
+    padding: var(--spacing-sm) var(--spacing-md);
+    margin-bottom: var(--spacing-xs);
+    background: var(--glass-bg);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-size: var(--font-size-sm);
+}
+
+.score-modal__factors li::before {
+    content: '✓';
+    color: var(--accent-green);
+    font-weight: 700;
+}
+
+.score-modal__factors li.negative::before {
+    content: '✗';
+    color: var(--accent-red);
+}
+
+.score-modal__tip {
+    padding: var(--spacing-md);
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(168, 85, 247, 0.1));
+    border-radius: var(--radius-md);
+    border-left: 3px solid var(--accent-blue);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+}
+
+/* Modal hidden state - override for score modal */
+#score-details-modal.hidden {
+    display: none;
+}
+
+#score-details-modal:not(.hidden) {
+    opacity: 1;
+    visibility: visible;
+}
+
 /* Responsive adjustments */
+
+/* Tablet (1024px and below) */
+@media (max-width: 1024px) {
+    .dashboard-section__grid--weather {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .dashboard-section__grid--weather #current-widget {
+        grid-column: 1;
+        grid-row: 1;
+    }
+
+    .dashboard-section__grid--weather #wind-widget {
+        grid-column: 2;
+        grid-row: 1;
+    }
+
+    .dashboard-section__grid--weather #visibility-widget {
+        grid-column: 1;
+        grid-row: 2;
+    }
+
+    .dashboard-section__grid--weather #precip-widget {
+        grid-column: 2;
+        grid-row: 2;
+    }
+
+    .dashboard-section__grid--weather #pressure-widget {
+        grid-column: 1 / -1;
+        grid-row: 3;
+    }
+
+    .dashboard-section__grid--scores {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Mobile (768px and below) */
 @media (max-width: 768px) {
     .app {
         padding: var(--spacing-md);
@@ -1078,6 +1297,10 @@ body {
         flex-direction: column;
         gap: var(--spacing-md);
         text-align: center;
+        position: sticky;
+        top: 0;
+        z-index: var(--z-sticky);
+        background: rgba(15, 12, 41, 0.95);
     }
 
     .location-bar__info {
@@ -1086,5 +1309,38 @@ body {
 
     .widget__value {
         font-size: var(--font-size-3xl);
+    }
+
+    .dashboard-section__grid--weather {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-section__grid--weather #current-widget,
+    .dashboard-section__grid--weather #wind-widget,
+    .dashboard-section__grid--weather #visibility-widget,
+    .dashboard-section__grid--weather #precip-widget,
+    .dashboard-section__grid--weather #pressure-widget {
+        grid-column: 1;
+        grid-row: auto;
+    }
+}
+
+/* Small mobile (640px and below) */
+@media (max-width: 640px) {
+    .dashboard-section__grid--scores {
+        grid-template-columns: 1fr;
+    }
+
+    .score-gauge {
+        width: 110px;
+        height: 110px;
+    }
+
+    .gauge-value {
+        font-size: var(--font-size-2xl);
+    }
+
+    .section-header {
+        font-size: var(--font-size-xs);
     }
 }

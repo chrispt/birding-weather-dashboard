@@ -37,7 +37,6 @@ const elements = {
     lastUpdate: document.getElementById('last-update'),
     countdown: document.getElementById('countdown'),
     refreshBtn: document.getElementById('refresh-btn'),
-    themeToggle: document.getElementById('theme-toggle'),
     settingsBtn: document.getElementById('settings-btn'),
     settingsModal: document.getElementById('settings-modal'),
     closeSettings: document.getElementById('close-settings'),
@@ -94,7 +93,16 @@ const elements = {
     ebirdApiKey: document.getElementById('ebird-api-key'),
     tempUnit: document.getElementById('temp-unit'),
     speedUnit: document.getElementById('speed-unit'),
-    pressureUnit: document.getElementById('pressure-unit')
+    pressureUnit: document.getElementById('pressure-unit'),
+
+    // Score details modal
+    scoreModal: document.getElementById('score-details-modal'),
+    closeScoreModal: document.getElementById('close-score-modal'),
+    scoreModalTitle: document.getElementById('score-modal-title'),
+    scoreModalValue: document.getElementById('score-modal-value'),
+    scoreModalRating: document.getElementById('score-modal-rating'),
+    scoreModalFactors: document.getElementById('score-modal-factors'),
+    scoreModalTip: document.getElementById('score-modal-tip')
 };
 
 let map = null;
@@ -109,9 +117,6 @@ async function init() {
 
     // Set up event listeners
     setupEventListeners();
-
-    // Apply saved theme
-    applyTheme();
 
     // Load settings into form
     loadSettingsForm();
@@ -137,9 +142,6 @@ async function init() {
 function setupEventListeners() {
     // Refresh button
     elements.refreshBtn.addEventListener('click', handleRefresh);
-
-    // Theme toggle
-    elements.themeToggle.addEventListener('click', toggleTheme);
 
     // Settings modal
     elements.settingsBtn.addEventListener('click', () => {
@@ -178,7 +180,33 @@ function setupEventListeners() {
         elements.locationName.textContent = name || 'Unknown location';
     });
 
-    store.subscribe('nightModeEnabled', applyTheme);
+    // Score details modal - click handlers for score widgets
+    document.querySelectorAll('.widget--score[data-score-type]').forEach(widget => {
+        widget.addEventListener('click', () => {
+            const scoreType = widget.dataset.scoreType;
+            openScoreDetails(scoreType);
+        });
+    });
+
+    // Close score modal
+    if (elements.closeScoreModal) {
+        elements.closeScoreModal.addEventListener('click', closeScoreModal);
+    }
+
+    if (elements.scoreModal) {
+        elements.scoreModal.addEventListener('click', (e) => {
+            if (e.target === elements.scoreModal) {
+                closeScoreModal();
+            }
+        });
+    }
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && elements.scoreModal && !elements.scoreModal.classList.contains('hidden')) {
+            closeScoreModal();
+        }
+    });
 }
 
 /**
@@ -768,17 +796,60 @@ async function handleRefresh() {
 }
 
 /**
- * Theme management
+ * Score Details Modal
  */
-function applyTheme() {
-    const nightMode = store.get('nightModeEnabled');
-    document.body.classList.toggle('night-mode', nightMode);
-    elements.themeToggle.querySelector('.theme-icon').textContent = nightMode ? '☀️' : '🌙';
+const scoreDisplayNames = {
+    hawkWatchScore: 'Hawk Watch',
+    seabirdScore: 'Seabird/Coastal',
+    songbirdMigrationScore: 'Songbird Migration',
+    songbirdActivityScore: 'Songbird Activity',
+    shorebirdScore: 'Shorebirds',
+    waterfowlScore: 'Waterfowl',
+    owlingScore: 'Owling'
+};
+
+const scoreTips = {
+    Excellent: "Perfect conditions! Head out now for the best birding.",
+    Good: "Favorable conditions - a good day to be in the field.",
+    Fair: "Moderate conditions - birding may be hit or miss.",
+    Poor: "Challenging conditions - consider waiting for improvement.",
+    Unfavorable: "Not ideal for this type of birding today."
+};
+
+function openScoreDetails(scoreType) {
+    const scoreData = store.get(scoreType);
+    if (!scoreData || !elements.scoreModal) return;
+
+    // Populate modal
+    elements.scoreModalTitle.textContent = scoreDisplayNames[scoreType] || 'Score Details';
+    elements.scoreModalValue.textContent = scoreData.score;
+    elements.scoreModalRating.textContent = scoreData.rating;
+    elements.scoreModalRating.className = `score-modal__rating gauge-rating--${scoreData.rating.toLowerCase()}`;
+
+    // Populate factors list
+    elements.scoreModalFactors.innerHTML = scoreData.details
+        .map(detail => {
+            const isNegative = detail.toLowerCase().includes('too') ||
+                              detail.toLowerCase().includes('poor') ||
+                              detail.toLowerCase().includes('storm') ||
+                              detail.toLowerCase().includes('headwinds') ||
+                              detail.toLowerCase().includes('heavy') ||
+                              detail.toLowerCase().includes('unfavorable');
+            return `<li class="${isNegative ? 'negative' : ''}">${detail}</li>`;
+        })
+        .join('');
+
+    // Add tip
+    elements.scoreModalTip.textContent = scoreTips[scoreData.rating] || '';
+
+    // Show modal
+    elements.scoreModal.classList.remove('hidden');
 }
 
-function toggleTheme() {
-    const current = store.get('nightModeEnabled');
-    store.set('nightModeEnabled', !current);
+function closeScoreModal() {
+    if (elements.scoreModal) {
+        elements.scoreModal.classList.add('hidden');
+    }
 }
 
 /**
