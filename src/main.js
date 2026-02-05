@@ -842,32 +842,69 @@ function initMap() {
 }
 
 /**
- * Switch map tile layer between light and dark modes
+ * Available map tile configurations
+ */
+const MAP_TILES = {
+    dark: {
+        url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        maxZoom: 19,
+        icon: '🌙'
+    },
+    light: {
+        url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        maxZoom: 19,
+        icon: '☀️'
+    },
+    osm: {
+        url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19,
+        icon: '🗺️'
+    },
+    satellite: {
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        attribution: '&copy; Esri, Maxar, Earthstar Geographics',
+        maxZoom: 18,
+        icon: '🛰️'
+    },
+    terrain: {
+        url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+        attribution: '&copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)',
+        maxZoom: 17,
+        icon: '⛰️'
+    }
+};
+
+const MAP_STYLE_ORDER = ['dark', 'light', 'osm', 'satellite', 'terrain'];
+
+/**
+ * Switch map tile layer to specified style
  */
 function switchMapTileLayer(mode) {
     if (!map) return;
 
-    const tileUrls = {
-        dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-        light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
-    };
+    const tileConfig = MAP_TILES[mode] || MAP_TILES.dark;
 
     if (currentTileLayer) {
         map.removeLayer(currentTileLayer);
     }
 
-    currentTileLayer = L.tileLayer(tileUrls[mode] || tileUrls.dark, {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        maxZoom: 19
+    currentTileLayer = L.tileLayer(tileConfig.url, {
+        attribution: tileConfig.attribution,
+        maxZoom: tileConfig.maxZoom
     }).addTo(map);
 }
 
 /**
- * Handle map style toggle button click
+ * Handle map style toggle button click - cycles through all styles
  */
 function handleMapStyleToggle() {
     const currentMode = store.get('mapTileMode') || 'dark';
-    const newMode = currentMode === 'dark' ? 'light' : 'dark';
+    const currentIndex = MAP_STYLE_ORDER.indexOf(currentMode);
+    const nextIndex = (currentIndex + 1) % MAP_STYLE_ORDER.length;
+    const newMode = MAP_STYLE_ORDER[nextIndex];
 
     // Update store (persists to localStorage)
     store.set('mapTileMode', newMode);
@@ -885,11 +922,23 @@ function handleMapStyleToggle() {
 }
 
 /**
- * Update the map toggle button icon
+ * Update the map toggle button icon based on current style
  */
 function updateMapToggleIcon(mode) {
     if (elements.mapToggleIcon) {
-        elements.mapToggleIcon.textContent = mode === 'dark' ? '🌙' : '☀️';
+        const tileConfig = MAP_TILES[mode] || MAP_TILES.dark;
+        elements.mapToggleIcon.textContent = tileConfig.icon;
+    }
+    // Update tooltip to show current style
+    if (elements.mapStyleToggle) {
+        const styleNames = {
+            dark: 'Dark',
+            light: 'Light',
+            osm: 'OpenStreetMap',
+            satellite: 'Satellite',
+            terrain: 'Terrain'
+        };
+        elements.mapStyleToggle.title = `Map: ${styleNames[mode] || 'Dark'} (click to change)`;
     }
 }
 
