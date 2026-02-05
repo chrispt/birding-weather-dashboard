@@ -202,14 +202,36 @@ export async function searchAddress(query) {
 
             // Include city/town (check multiple fields for rural areas)
             // Nominatim uses different fields depending on location type
-            // 'place' is used for small named locations like unincorporated communities
             const specificLocality = addr.city || addr.town || addr.village || addr.hamlet ||
                                      addr.place || addr.locality || addr.neighbourhood || addr.suburb;
             const broaderLocality = addr.municipality || addr.county;
 
+            // If no specific locality found, try to extract from display_name
+            // display_name format: "800 Thompson Ridge Road, Ferrum, Franklin County, Virginia, USA"
+            let locality = specificLocality;
+            if (!locality && item.display_name) {
+                const displayParts = item.display_name.split(', ');
+                // Look for a locality after the street address but before county/state
+                // Skip parts that look like street addresses, counties, states, or countries
+                for (let i = 1; i < displayParts.length - 2; i++) {
+                    const part = displayParts[i];
+                    // Skip if it looks like a county or the state
+                    if (part.includes('County') || part === addr.state || part === addr.country) {
+                        continue;
+                    }
+                    // Skip if it matches the road name
+                    if (addr.road && part.includes(addr.road)) {
+                        continue;
+                    }
+                    // This is likely the locality name
+                    locality = part;
+                    break;
+                }
+            }
+
             // Prefer specific locality (town name) over broader (county)
-            if (specificLocality) {
-                parts.push(specificLocality);
+            if (locality) {
+                parts.push(locality);
             } else if (broaderLocality) {
                 parts.push(broaderLocality);
             }
