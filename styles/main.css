@@ -336,6 +336,22 @@ body {
     stroke: url(#seabirdGradient);
 }
 
+.gauge-fill--songbird {
+    stroke: url(#songbirdGradient);
+}
+
+.gauge-fill--shorebird {
+    stroke: url(#shorebirdGradient);
+}
+
+.gauge-fill--waterfowl {
+    stroke: url(#waterfowlGradient);
+}
+
+.gauge-fill--owling {
+    stroke: url(#owlingGradient);
+}
+
 /* Score color classes for gauges */
 .gauge-fill--excellent { stroke: var(--score-excellent); }
 .gauge-fill--good { stroke: var(--score-good); }

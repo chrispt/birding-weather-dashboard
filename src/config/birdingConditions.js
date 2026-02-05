@@ -117,6 +117,256 @@ export function scoreSeabirding(windDir, windSpeed, precipitation, coastOrientat
 }
 
 /**
+ * Songbird Migration Scoring
+ * Ideal: S/SW winds in spring, NW winds in fall, light-moderate speed, rising pressure
+ * @param {number} windDir - Wind direction in degrees
+ * @param {number} windSpeed - Wind speed in mph
+ * @param {number} temp - Temperature in Fahrenheit
+ * @param {string} pressureTrend - 'rising', 'falling', 'steady', etc.
+ * @param {string} season - 'spring', 'fall', or 'winter'
+ * @returns {object} Score and rating
+ */
+export function scoreSongbirdMigration(windDir, windSpeed, temp, pressureTrend, season = 'spring') {
+    let score = 45;
+    const details = [];
+
+    // Wind direction (seasonal)
+    const favorableDir = season === 'spring'
+        ? isWindInRange(windDir, 135, 270)  // S/SW winds in spring
+        : isWindInRange(windDir, 270, 45);   // NW/N winds in fall
+
+    if (favorableDir) {
+        score += 20;
+        details.push('Favorable wind direction');
+    } else {
+        score -= 10;
+        details.push('Unfavorable wind direction');
+    }
+
+    // Wind speed (light-moderate best for migration)
+    if (windSpeed >= 5 && windSpeed <= 15) {
+        score += 15;
+        details.push('Ideal wind speed');
+    } else if (windSpeed > 25) {
+        score -= 15;
+        details.push('Winds too strong');
+    } else if (windSpeed < 5) {
+        score += 5;
+        details.push('Calm conditions');
+    }
+
+    // Temperature (45-65°F optimal for migration)
+    if (temp >= 45 && temp <= 65) {
+        score += 10;
+        details.push('Good migration temps');
+    } else if (temp < 35 || temp > 75) {
+        score -= 5;
+    }
+
+    // Pressure trend (rising = birds moving)
+    if (pressureTrend === 'rising' || pressureTrend === 'rising-fast') {
+        score += 10;
+        details.push('Rising pressure - birds moving');
+    } else if (pressureTrend === 'falling-fast') {
+        score -= 10;
+        details.push('Falling pressure - birds grounded');
+    }
+
+    score = Math.max(0, Math.min(100, score));
+
+    return {
+        score,
+        rating: getScoreRating(score),
+        details
+    };
+}
+
+/**
+ * Shorebird Scoring
+ * Ideal: Onshore winds, recent rain, good visibility, calm conditions
+ * @param {number} windDir - Wind direction in degrees
+ * @param {number} windSpeed - Wind speed in mph
+ * @param {number} precipLast6h - Precipitation in last 6 hours (mm)
+ * @param {number} visibility - Visibility in meters
+ * @returns {object} Score and rating
+ */
+export function scoreShorebirds(windDir, windSpeed, precipLast6h, visibility) {
+    let score = 40;
+    const details = [];
+
+    // Onshore winds (NE through S)
+    if (isWindInRange(windDir, 45, 180)) {
+        score += 25;
+        details.push('Onshore winds');
+    } else {
+        score -= 5;
+        details.push('Offshore winds');
+    }
+
+    // Recent rain exposes mudflats
+    if (precipLast6h > 2) {
+        score += 15;
+        details.push('Recent rain - exposed mudflats');
+    } else if (precipLast6h > 0) {
+        score += 10;
+        details.push('Light recent rain');
+    }
+
+    // Visibility for spotting
+    const visibilityMiles = visibility / 1609.34;
+    if (visibilityMiles > 8) {
+        score += 15;
+        details.push('Good visibility');
+    } else if (visibilityMiles < 2) {
+        score -= 10;
+        details.push('Poor visibility');
+    }
+
+    // Light winds best for feeding
+    if (windSpeed < 15) {
+        score += 10;
+        details.push('Calm conditions for feeding');
+    } else if (windSpeed > 25) {
+        score -= 10;
+        details.push('Too windy');
+    }
+
+    score = Math.max(0, Math.min(100, score));
+
+    return {
+        score,
+        rating: getScoreRating(score),
+        details
+    };
+}
+
+/**
+ * Waterfowl Scoring
+ * Ideal: Cold temps, moderate wind, clear conditions, falling pressure
+ * @param {number} temp - Temperature in Fahrenheit
+ * @param {number} windSpeed - Wind speed in mph
+ * @param {number} visibility - Visibility in meters
+ * @param {string} pressureTrend - Pressure trend
+ * @returns {object} Score and rating
+ */
+export function scoreWaterfowl(temp, windSpeed, visibility, pressureTrend) {
+    let score = 40;
+    const details = [];
+
+    // Cold temps push birds south
+    if (temp < 35) {
+        score += 25;
+        details.push('Prime waterfowl weather');
+    } else if (temp < 50) {
+        score += 20;
+        details.push('Cold temps moving ducks');
+    } else if (temp > 60) {
+        score -= 10;
+        details.push('Too warm for waterfowl activity');
+    }
+
+    // Moderate winds
+    if (windSpeed >= 10 && windSpeed <= 20) {
+        score += 15;
+        details.push('Good flight conditions');
+    } else if (windSpeed > 30) {
+        score -= 10;
+        details.push('Winds too strong');
+    } else if (windSpeed < 5) {
+        score += 5;
+        details.push('Calm - birds rafting');
+    }
+
+    // Visibility
+    const visibilityMiles = visibility / 1609.34;
+    if (visibilityMiles > 8) {
+        score += 15;
+        details.push('Clear skies');
+    } else if (visibilityMiles < 2) {
+        score -= 5;
+    }
+
+    // Falling pressure (approaching storm)
+    if (pressureTrend === 'falling' || pressureTrend === 'falling-fast') {
+        score += 10;
+        details.push('Storm pushing birds');
+    }
+
+    score = Math.max(0, Math.min(100, score));
+
+    return {
+        score,
+        rating: getScoreRating(score),
+        details
+    };
+}
+
+/**
+ * Owling/Nocturnal Scoring
+ * Ideal: Calm winds, cool temps, clear skies, low humidity
+ * @param {number} windSpeed - Wind speed in mph
+ * @param {number} temp - Temperature in Fahrenheit
+ * @param {number} weatherCode - WMO weather code
+ * @param {number} humidity - Relative humidity percentage
+ * @returns {object} Score and rating
+ */
+export function scoreOwling(windSpeed, temp, weatherCode, humidity) {
+    let score = 45;
+    const details = [];
+
+    // Calm winds essential
+    if (windSpeed < 8) {
+        score += 20;
+        details.push('Calm winds - owls active');
+    } else if (windSpeed > 15) {
+        score -= 20;
+        details.push('Too windy for owling');
+    } else {
+        score += 5;
+    }
+
+    // Cool temps (40-50°F ideal)
+    if (temp >= 35 && temp <= 55) {
+        score += 15;
+        details.push('Ideal temps for owling');
+    } else if (temp < 25) {
+        score -= 10;
+        details.push('Very cold - reduced activity');
+    } else if (temp > 65) {
+        score -= 5;
+    }
+
+    // Clear or partly cloudy (weather codes 0-2)
+    if (weatherCode <= 1) {
+        score += 20;
+        details.push('Clear skies');
+    } else if (weatherCode <= 3) {
+        score += 10;
+        details.push('Partly cloudy');
+    } else if (weatherCode >= 50) {
+        score -= 15;
+        details.push('Precipitation - owls less active');
+    }
+
+    // Low humidity (sound carries better)
+    if (humidity < 70) {
+        score += 10;
+        details.push('Low humidity - good acoustics');
+    } else if (humidity > 90) {
+        score -= 5;
+        details.push('High humidity');
+    }
+
+    score = Math.max(0, Math.min(100, score));
+
+    return {
+        score,
+        rating: getScoreRating(score),
+        details
+    };
+}
+
+/**
  * Fallout Risk Assessment
  * High risk when migrants forced down by weather
  * @param {number} visibility - Visibility in meters

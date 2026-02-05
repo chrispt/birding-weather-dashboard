@@ -132,6 +132,106 @@
                 <div class="widget__subtitle" id="seabird-details"></div>
             </div>
 
+            <!-- Songbird Migration Score -->
+            <div class="widget" id="songbird-widget">
+                <div class="widget__header">
+                    <span class="widget__title">Songbird Migration</span>
+                </div>
+                <div class="score-gauge" id="songbird-score">
+                    <svg viewBox="0 0 120 120" class="gauge-svg">
+                        <defs>
+                            <linearGradient id="songbirdGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="var(--accent-green)"/>
+                                <stop offset="100%" stop-color="var(--accent-cyan)"/>
+                            </linearGradient>
+                        </defs>
+                        <circle cx="60" cy="60" r="50" class="gauge-bg"/>
+                        <circle cx="60" cy="60" r="50" class="gauge-fill gauge-fill--songbird" id="songbird-gauge-fill"
+                                stroke-dasharray="314" stroke-dashoffset="314"/>
+                    </svg>
+                    <div class="gauge-center">
+                        <span class="gauge-value" id="songbird-gauge-value">--</span>
+                        <span class="gauge-rating" id="songbird-gauge-rating"></span>
+                    </div>
+                </div>
+                <div class="widget__subtitle" id="songbird-details"></div>
+            </div>
+
+            <!-- Shorebird Score -->
+            <div class="widget" id="shorebird-widget">
+                <div class="widget__header">
+                    <span class="widget__title">Shorebirds</span>
+                </div>
+                <div class="score-gauge" id="shorebird-score">
+                    <svg viewBox="0 0 120 120" class="gauge-svg">
+                        <defs>
+                            <linearGradient id="shorebirdGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="var(--accent-orange)"/>
+                                <stop offset="100%" stop-color="var(--accent-yellow)"/>
+                            </linearGradient>
+                        </defs>
+                        <circle cx="60" cy="60" r="50" class="gauge-bg"/>
+                        <circle cx="60" cy="60" r="50" class="gauge-fill gauge-fill--shorebird" id="shorebird-gauge-fill"
+                                stroke-dasharray="314" stroke-dashoffset="314"/>
+                    </svg>
+                    <div class="gauge-center">
+                        <span class="gauge-value" id="shorebird-gauge-value">--</span>
+                        <span class="gauge-rating" id="shorebird-gauge-rating"></span>
+                    </div>
+                </div>
+                <div class="widget__subtitle" id="shorebird-details"></div>
+            </div>
+
+            <!-- Waterfowl Score -->
+            <div class="widget" id="waterfowl-widget">
+                <div class="widget__header">
+                    <span class="widget__title">Waterfowl</span>
+                </div>
+                <div class="score-gauge" id="waterfowl-score">
+                    <svg viewBox="0 0 120 120" class="gauge-svg">
+                        <defs>
+                            <linearGradient id="waterfowlGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="var(--accent-blue)"/>
+                                <stop offset="100%" stop-color="var(--accent-purple)"/>
+                            </linearGradient>
+                        </defs>
+                        <circle cx="60" cy="60" r="50" class="gauge-bg"/>
+                        <circle cx="60" cy="60" r="50" class="gauge-fill gauge-fill--waterfowl" id="waterfowl-gauge-fill"
+                                stroke-dasharray="314" stroke-dashoffset="314"/>
+                    </svg>
+                    <div class="gauge-center">
+                        <span class="gauge-value" id="waterfowl-gauge-value">--</span>
+                        <span class="gauge-rating" id="waterfowl-gauge-rating"></span>
+                    </div>
+                </div>
+                <div class="widget__subtitle" id="waterfowl-details"></div>
+            </div>
+
+            <!-- Owling/Nocturnal Score -->
+            <div class="widget" id="owling-widget">
+                <div class="widget__header">
+                    <span class="widget__title">Owling</span>
+                </div>
+                <div class="score-gauge" id="owling-score">
+                    <svg viewBox="0 0 120 120" class="gauge-svg">
+                        <defs>
+                            <linearGradient id="owlingGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="var(--accent-purple)"/>
+                                <stop offset="100%" stop-color="var(--accent-pink)"/>
+                            </linearGradient>
+                        </defs>
+                        <circle cx="60" cy="60" r="50" class="gauge-bg"/>
+                        <circle cx="60" cy="60" r="50" class="gauge-fill gauge-fill--owling" id="owling-gauge-fill"
+                                stroke-dasharray="314" stroke-dashoffset="314"/>
+                    </svg>
+                    <div class="gauge-center">
+                        <span class="gauge-value" id="owling-gauge-value">--</span>
+                        <span class="gauge-rating" id="owling-gauge-rating"></span>
+                    </div>
+                </div>
+                <div class="widget__subtitle" id="owling-details"></div>
+            </div>
+
             <!-- Wind Widget (full width) -->
             <div class="widget widget--full-width" id="wind-widget">
                 <div class="widget__header">

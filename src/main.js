@@ -9,6 +9,10 @@ import { fetchNearbyHotspots } from './api/ebird.js';
 import {
     scoreHawkWatch,
     scoreSeabirding,
+    scoreSongbirdMigration,
+    scoreShorebirds,
+    scoreWaterfowl,
+    scoreOwling,
     assessFalloutRisk,
     analyzePressureTrend,
     detectFrontPassage
@@ -216,11 +220,25 @@ async function loadWeatherData() {
 /**
  * Calculate birding-specific scores
  */
+/**
+ * Get current season for migration scoring
+ */
+function getSeason() {
+    const month = new Date().getMonth();
+    if (month >= 2 && month <= 4) return 'spring';  // Mar-May
+    if (month >= 8 && month <= 10) return 'fall';   // Sep-Nov
+    return 'winter';
+}
+
 function calculateBirdingConditions(weatherData) {
     const { current, pressureHistory, tempHistory, precipLast6h } = weatherData;
 
     // Convert wind speed to mph for scoring
     const windSpeedMph = convertWindSpeed(current.windSpeed, 'mph');
+
+    // Pressure trend (needed for several scores)
+    const pressure = analyzePressureTrend(pressureHistory);
+    store.set('pressureTrend', pressure);
 
     // Hawk watch score
     const hawkWatch = scoreHawkWatch(
@@ -238,9 +256,42 @@ function calculateBirdingConditions(weatherData) {
     );
     store.set('seabirdScore', seabird);
 
-    // Pressure trend
-    const pressure = analyzePressureTrend(pressureHistory);
-    store.set('pressureTrend', pressure);
+    // Songbird migration score
+    const songbird = scoreSongbirdMigration(
+        current.windDirection,
+        windSpeedMph,
+        current.temperature,
+        pressure.trend,
+        getSeason()
+    );
+    store.set('songbirdScore', songbird);
+
+    // Shorebird score
+    const shorebird = scoreShorebirds(
+        current.windDirection,
+        windSpeedMph,
+        precipLast6h,
+        current.visibility
+    );
+    store.set('shorebirdScore', shorebird);
+
+    // Waterfowl score
+    const waterfowl = scoreWaterfowl(
+        current.temperature,
+        windSpeedMph,
+        current.visibility,
+        pressure.trend
+    );
+    store.set('waterfowlScore', waterfowl);
+
+    // Owling score
+    const owling = scoreOwling(
+        windSpeedMph,
+        current.temperature,
+        current.weatherCode,
+        current.humidity
+    );
+    store.set('owlingScore', owling);
 
     // Fallout risk
     const fallout = assessFalloutRisk(
@@ -321,18 +372,26 @@ function renderWeatherData(weatherData) {
  * Render birding scores with animated gauges
  */
 function renderScores() {
-    const hawkWatch = store.get('hawkWatchScore');
-    const seabird = store.get('seabirdScore');
+    // Define all score types and their store keys
+    const scoreTypes = [
+        { type: 'hawk', storeKey: 'hawkWatchScore', detailsId: 'hawk-details' },
+        { type: 'seabird', storeKey: 'seabirdScore', detailsId: 'seabird-details' },
+        { type: 'songbird', storeKey: 'songbirdScore', detailsId: 'songbird-details' },
+        { type: 'shorebird', storeKey: 'shorebirdScore', detailsId: 'shorebird-details' },
+        { type: 'waterfowl', storeKey: 'waterfowlScore', detailsId: 'waterfowl-details' },
+        { type: 'owling', storeKey: 'owlingScore', detailsId: 'owling-details' }
+    ];
 
-    if (hawkWatch) {
-        updateScoreGauge('hawk', hawkWatch);
-        elements.hawkDetails.textContent = hawkWatch.details[0] || '';
-    }
-
-    if (seabird) {
-        updateScoreGauge('seabird', seabird);
-        elements.seabirdDetails.textContent = seabird.details[0] || '';
-    }
+    scoreTypes.forEach(({ type, storeKey, detailsId }) => {
+        const scoreData = store.get(storeKey);
+        if (scoreData) {
+            updateScoreGauge(type, scoreData);
+            const detailsEl = document.getElementById(detailsId);
+            if (detailsEl) {
+                detailsEl.textContent = scoreData.details[0] || '';
+            }
+        }
+    });
 }
 
 /**
