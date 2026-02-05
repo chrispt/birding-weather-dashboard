@@ -76,6 +76,14 @@ const elements = {
     map: document.getElementById('map'),
     hotspots: document.getElementById('hotspots'),
 
+    // Location dropdown
+    locationDropdownBtn: document.getElementById('location-dropdown-btn'),
+    locationDropdown: document.getElementById('location-dropdown'),
+    useCurrentLocation: document.getElementById('use-current-location'),
+    recentLocations: document.getElementById('recent-locations'),
+    recentDivider: document.getElementById('recent-divider'),
+    recentLabel: document.getElementById('recent-label'),
+
     // Settings form
     ebirdApiKey: document.getElementById('ebird-api-key'),
     tempUnit: document.getElementById('temp-unit'),
@@ -143,6 +151,21 @@ function setupEventListeners() {
     });
 
     elements.saveSettings.addEventListener('click', saveSettings);
+
+    // Location dropdown
+    elements.locationDropdownBtn.addEventListener('click', toggleLocationDropdown);
+    elements.locationName.addEventListener('click', toggleLocationDropdown);
+    elements.locationName.style.cursor = 'pointer';
+    elements.useCurrentLocation.addEventListener('click', handleUseCurrentLocation);
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!elements.locationDropdown.contains(e.target) &&
+            !elements.locationDropdownBtn.contains(e.target) &&
+            !elements.locationName.contains(e.target)) {
+            elements.locationDropdown.classList.add('hidden');
+        }
+    });
 
     // Subscribe to store changes
     store.subscribe('locationName', (name) => {
@@ -422,7 +445,8 @@ function renderHotspots(hotspots) {
                 map.setView([lat, lon], 14);
             }
 
-            // Fetch weather for this hotspot
+            // Add to recent locations and fetch weather
+            addRecentLocation(lat, lon, name);
             await setLocation(lat, lon, name);
             await loadWeatherData();
         });
@@ -557,8 +581,124 @@ function saveSettings() {
     handleRefresh();
 }
 
+/**
+ * Location dropdown management
+ */
+const RECENT_LOCATIONS_KEY = 'birdingWeather_recentLocations';
+const MAX_RECENT_LOCATIONS = 5;
+
+function toggleLocationDropdown() {
+    const isHidden = elements.locationDropdown.classList.contains('hidden');
+    if (isHidden) {
+        renderRecentLocations();
+        elements.locationDropdown.classList.remove('hidden');
+    } else {
+        elements.locationDropdown.classList.add('hidden');
+    }
+}
+
+async function handleUseCurrentLocation() {
+    elements.locationDropdown.classList.add('hidden');
+
+    // Get fresh GPS position
+    if (!navigator.geolocation) {
+        alert('Geolocation not supported by this browser');
+        return;
+    }
+
+    elements.locationName.textContent = 'Getting location...';
+
+    navigator.geolocation.getCurrentPosition(
+        async (position) => {
+            const { latitude, longitude } = position.coords;
+            await setLocation(latitude, longitude, null);
+            await loadWeatherData();
+            await loadHotspots();
+
+            // Center map on new location
+            if (map) {
+                map.setView([latitude, longitude], 11);
+                if (userMarker) {
+                    userMarker.setLatLng([latitude, longitude]);
+                }
+            }
+        },
+        (error) => {
+            console.error('Geolocation error:', error);
+            alert('Could not get current location. Please check your browser permissions.');
+            elements.locationName.textContent = store.get('locationName') || 'Location unavailable';
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+    );
+}
+
+function getRecentLocations() {
+    try {
+        const stored = localStorage.getItem(RECENT_LOCATIONS_KEY);
+        return stored ? JSON.parse(stored) : [];
+    } catch {
+        return [];
+    }
+}
+
+function addRecentLocation(lat, lon, name) {
+    if (!name) return;
+
+    let recent = getRecentLocations();
+
+    // Remove if already exists
+    recent = recent.filter(loc => loc.name !== name);
+
+    // Add to beginning
+    recent.unshift({ lat, lon, name });
+
+    // Keep only MAX_RECENT_LOCATIONS
+    recent = recent.slice(0, MAX_RECENT_LOCATIONS);
+
+    localStorage.setItem(RECENT_LOCATIONS_KEY, JSON.stringify(recent));
+}
+
+function renderRecentLocations() {
+    const recent = getRecentLocations();
+
+    if (recent.length === 0) {
+        elements.recentDivider.classList.add('hidden');
+        elements.recentLabel.classList.add('hidden');
+        elements.recentLocations.innerHTML = '';
+        return;
+    }
+
+    elements.recentDivider.classList.remove('hidden');
+    elements.recentLabel.classList.remove('hidden');
+
+    elements.recentLocations.innerHTML = recent.map(loc => `
+        <button class="location-dropdown__item" data-lat="${loc.lat}" data-lon="${loc.lon}" data-name="${loc.name}">
+            ${loc.name}
+        </button>
+    `).join('');
+
+    // Add click handlers
+    elements.recentLocations.querySelectorAll('.location-dropdown__item').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const lat = parseFloat(btn.dataset.lat);
+            const lon = parseFloat(btn.dataset.lon);
+            const name = btn.dataset.name;
+
+            elements.locationDropdown.classList.add('hidden');
+
+            await setLocation(lat, lon, name);
+            await loadWeatherData();
+
+            if (map) {
+                map.setView([lat, lon], 11);
+            }
+        });
+    });
+}
+
 // Expose function for map popup buttons
 window.loadHotspotWeather = async (lat, lon, name) => {
+    addRecentLocation(lat, lon, name);
     await setLocation(lat, lon, name);
     await loadWeatherData();
 };

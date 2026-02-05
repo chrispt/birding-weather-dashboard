@@ -31,7 +31,20 @@
         <!-- Location Bar -->
         <div class="location-bar">
             <div class="location-bar__info">
-                <span class="location-bar__name" id="location-name">Loading location...</span>
+                <div class="location-bar__selector">
+                    <span class="location-bar__name" id="location-name">Loading location...</span>
+                    <button class="btn btn--icon location-bar__dropdown-btn" id="location-dropdown-btn" aria-label="Select location">
+                        ▼
+                    </button>
+                </div>
+                <div class="location-dropdown hidden" id="location-dropdown">
+                    <button class="location-dropdown__item location-dropdown__item--current" id="use-current-location">
+                        📍 Use Current Location
+                    </button>
+                    <div class="location-dropdown__divider" id="recent-divider"></div>
+                    <div class="location-dropdown__label" id="recent-label">Recent Locations</div>
+                    <div id="recent-locations"></div>
+                </div>
                 <span class="location-bar__update" id="last-update"></span>
             </div>
             <div class="location-bar__actions">
