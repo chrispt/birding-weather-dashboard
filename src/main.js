@@ -3,7 +3,7 @@
  */
 
 import store from './state/store.js';
-import { initializeLocation, setLocation, searchAddress } from './modules/geolocation.js';
+import { initializeLocation, setLocation, searchAddress, checkCoastalLocation } from './modules/geolocation.js';
 import { fetchWeatherForecast, getWeatherDescription } from './api/openMeteo.js';
 import { fetchNearbyHotspots } from './api/ebird.js';
 import {
@@ -14,6 +14,8 @@ import {
     scoreShorebirds,
     scoreWaterfowl,
     scoreOwling,
+    scoreGrasslandBirds,
+    scoreWoodlandBirds,
     assessFalloutRisk,
     analyzePressureTrend,
     detectFrontPassage
@@ -256,8 +258,8 @@ async function loadWeatherData() {
         error: null
     });
 
-    // Calculate birding conditions
-    calculateBirdingConditions(data);
+    // Calculate birding conditions (async for coastal check)
+    await calculateBirdingConditions(data);
 
     // Update UI
     renderWeatherData(data);
@@ -276,7 +278,7 @@ function getSeason() {
     return 'winter';
 }
 
-function calculateBirdingConditions(weatherData) {
+async function calculateBirdingConditions(weatherData) {
     const { current, pressureHistory, tempHistory, precipLast6h } = weatherData;
 
     // Get current hour for time-sensitive scores
@@ -284,6 +286,22 @@ function calculateBirdingConditions(weatherData) {
 
     // Convert wind speed to mph for scoring
     const windSpeedMph = convertWindSpeed(current.windSpeed, 'mph');
+
+    // Check if location is coastal (if not already checked)
+    const lat = store.get('userLat');
+    const lon = store.get('userLon');
+    let isCoastal = store.get('isCoastalLocation');
+    let coastType = store.get('coastType');
+
+    if (isCoastal === null && lat && lon) {
+        const coastalInfo = await checkCoastalLocation(lat, lon);
+        isCoastal = coastalInfo.isCoastal;
+        coastType = coastalInfo.coastType;
+        store.update({
+            isCoastalLocation: isCoastal,
+            coastType: coastType
+        });
+    }
 
     // Pressure trend (needed for several scores)
     const pressure = analyzePressureTrend(pressureHistory);
@@ -297,13 +315,48 @@ function calculateBirdingConditions(weatherData) {
     );
     store.set('hawkWatchScore', hawkWatch);
 
-    // Seabird score
-    const seabird = scoreSeabirding(
-        current.windDirection,
-        windSpeedMph,
-        precipLast6h
-    );
-    store.set('seabirdScore', seabird);
+    // Conditional scores based on coastal vs inland location
+    if (isCoastal) {
+        // Coastal location - use seabird and shorebird scores
+        const seabird = scoreSeabirding(
+            current.windDirection,
+            windSpeedMph,
+            precipLast6h,
+            coastType
+        );
+        store.set('seabirdScore', seabird);
+        store.set('grasslandScore', null);
+
+        const shorebird = scoreShorebirds(
+            current.windDirection,
+            windSpeedMph,
+            precipLast6h,
+            current.visibility
+        );
+        store.set('shorebirdScore', shorebird);
+        store.set('woodlandScore', null);
+    } else {
+        // Inland location - use grassland and woodland scores
+        const grassland = scoreGrasslandBirds(
+            windSpeedMph,
+            current.visibility,
+            current.temperature,
+            current.humidity,
+            hour
+        );
+        store.set('grasslandScore', grassland);
+        store.set('seabirdScore', null);
+
+        const woodland = scoreWoodlandBirds(
+            windSpeedMph,
+            current.weatherCode,
+            current.temperature,
+            current.humidity,
+            hour
+        );
+        store.set('woodlandScore', woodland);
+        store.set('shorebirdScore', null);
+    }
 
     // Songbird Migration score (returns null outside migration season)
     const songbirdMigration = scoreSongbirdMigration(
@@ -321,15 +374,6 @@ function calculateBirdingConditions(weatherData) {
         hour
     );
     store.set('songbirdActivityScore', songbirdActivity);
-
-    // Shorebird score
-    const shorebird = scoreShorebirds(
-        current.windDirection,
-        windSpeedMph,
-        precipLast6h,
-        current.visibility
-    );
-    store.set('shorebirdScore', shorebird);
 
     // Waterfowl score
     const waterfowl = scoreWaterfowl(
@@ -429,13 +473,18 @@ function renderWeatherData(weatherData) {
  * Render birding scores with animated gauges
  */
 function renderScores() {
+    const isCoastal = store.get('isCoastalLocation');
+
+    // Update widget titles and visibility based on coastal vs inland
+    updateLocationBasedWidgets(isCoastal);
+
     // Define all score types and their store keys
     const scoreTypes = [
         { type: 'hawk', storeKey: 'hawkWatchScore', detailsId: 'hawk-details' },
-        { type: 'seabird', storeKey: 'seabirdScore', detailsId: 'seabird-details' },
+        { type: 'seabird', storeKey: isCoastal ? 'seabirdScore' : 'grasslandScore', detailsId: 'seabird-details' },
         { type: 'songbird-migration', storeKey: 'songbirdMigrationScore', detailsId: 'songbird-migration-details', widgetId: 'songbird-migration-widget' },
         { type: 'songbird-activity', storeKey: 'songbirdActivityScore', detailsId: 'songbird-activity-details' },
-        { type: 'shorebird', storeKey: 'shorebirdScore', detailsId: 'shorebird-details' },
+        { type: 'shorebird', storeKey: isCoastal ? 'shorebirdScore' : 'woodlandScore', detailsId: 'shorebird-details' },
         { type: 'waterfowl', storeKey: 'waterfowlScore', detailsId: 'waterfowl-details' },
         { type: 'owling', storeKey: 'owlingScore', detailsId: 'owling-details' }
     ];
@@ -459,6 +508,33 @@ function renderScores() {
             }
         }
     });
+}
+
+/**
+ * Update widget titles based on coastal vs inland location
+ */
+function updateLocationBasedWidgets(isCoastal) {
+    // Seabird/Grassland widget
+    const seabirdWidget = document.getElementById('seabird-widget');
+    if (seabirdWidget) {
+        const titleEl = seabirdWidget.querySelector('.widget__title');
+        if (titleEl) {
+            titleEl.textContent = isCoastal ? 'Seabird/Coastal' : 'Grassland Birds';
+        }
+        // Update the data-score-type for the modal
+        seabirdWidget.dataset.scoreType = isCoastal ? 'seabirdScore' : 'grasslandScore';
+    }
+
+    // Shorebird/Woodland widget
+    const shorebirdWidget = document.getElementById('shorebird-widget');
+    if (shorebirdWidget) {
+        const titleEl = shorebirdWidget.querySelector('.widget__title');
+        if (titleEl) {
+            titleEl.textContent = isCoastal ? 'Shorebirds' : 'Woodland Birds';
+        }
+        // Update the data-score-type for the modal
+        shorebirdWidget.dataset.scoreType = isCoastal ? 'shorebirdScore' : 'woodlandScore';
+    }
 }
 
 /**
@@ -681,6 +757,8 @@ function renderHotspots(hotspots) {
 
             // Add to recent locations and fetch weather
             addRecentLocation(lat, lon, name);
+            // Reset coastal status for new location
+            store.update({ isCoastalLocation: null, coastType: null });
             await setLocation(lat, lon, name);
             await loadWeatherData();
         });
@@ -824,9 +902,11 @@ async function handleRefresh() {
 const scoreDisplayNames = {
     hawkWatchScore: 'Hawk Watch',
     seabirdScore: 'Seabird/Coastal',
+    grasslandScore: 'Grassland Birds',
     songbirdMigrationScore: 'Songbird Migration',
     songbirdActivityScore: 'Songbird Activity',
     shorebirdScore: 'Shorebirds',
+    woodlandScore: 'Woodland Birds',
     waterfowlScore: 'Waterfowl',
     owlingScore: 'Owling'
 };
@@ -947,6 +1027,8 @@ async function handleUseCurrentLocation() {
     navigator.geolocation.getCurrentPosition(
         async (position) => {
             const { latitude, longitude } = position.coords;
+            // Reset coastal status for new location
+            store.update({ isCoastalLocation: null, coastType: null });
             await setLocation(latitude, longitude, null);
             await loadWeatherData();
             await loadHotspots();
@@ -1022,6 +1104,8 @@ function renderRecentLocations() {
 
             elements.locationDropdown.classList.add('hidden');
 
+            // Reset coastal status for new location
+            store.update({ isCoastalLocation: null, coastType: null });
             await setLocation(lat, lon, name);
             await loadWeatherData();
 
@@ -1107,6 +1191,8 @@ function renderSavedLocations() {
 
             elements.locationDropdown.classList.add('hidden');
 
+            // Reset coastal status for new location
+            store.update({ isCoastalLocation: null, coastType: null });
             await setLocation(lat, lon, name);
             await loadWeatherData();
 
@@ -1165,6 +1251,8 @@ async function handleLocationSearch(e) {
             elements.locationDropdown.classList.add('hidden');
             addRecentLocation(lat, lon, name);
 
+            // Reset coastal status for new location
+            store.update({ isCoastalLocation: null, coastType: null });
             await setLocation(lat, lon, name);
             await loadWeatherData();
             await loadHotspots();
@@ -1180,6 +1268,8 @@ async function handleLocationSearch(e) {
 window.loadHotspotWeather = async (lat, lon, name) => {
     if (map) map.closePopup();
     addRecentLocation(lat, lon, name);
+    // Reset coastal status for new location
+    store.update({ isCoastalLocation: null, coastType: null });
     await setLocation(lat, lon, name);
     await loadWeatherData();
 };

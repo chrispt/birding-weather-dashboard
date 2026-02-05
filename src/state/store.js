@@ -11,6 +11,8 @@ const initialState = {
     userLon: null,
     locationName: null,
     selectedHotspot: null,
+    isCoastalLocation: null,
+    coastType: null,
 
     // Weather Data
     currentWeather: null,

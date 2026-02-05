@@ -687,3 +687,195 @@ function getSeabirdDetails(windDir, windSpeed, isOnshore) {
 
     return details;
 }
+
+/**
+ * Grassland Birds Scoring (Inland alternative to Seabird)
+ * Ideal: Moderate wind 8-15mph, clear skies, 50-75°F, dawn/dusk
+ * Good for: meadowlarks, sparrows, longspurs, harriers, short-eared owls
+ * @param {number} windSpeed - Wind speed in mph
+ * @param {number} visibility - Visibility in meters
+ * @param {number} temp - Temperature in Fahrenheit
+ * @param {number} humidity - Relative humidity percentage
+ * @param {number} hour - Hour of day (0-23)
+ * @returns {object} Score and rating
+ */
+export function scoreGrasslandBirds(windSpeed, visibility, temp, humidity, hour = 7) {
+    let score = 40;
+    const details = [];
+
+    // Time of day - grassland birds active at dawn/dusk
+    const isDawn = hour >= 5 && hour < 9;
+    const isDusk = hour >= 17 && hour < 20;
+    const isMidday = hour >= 11 && hour < 15;
+
+    if (isDawn) {
+        score += 20;
+        details.push('Dawn - peak grassland activity');
+    } else if (isDusk) {
+        score += 15;
+        details.push('Dusk - good for harriers, short-eared owls');
+    } else if (isMidday) {
+        score -= 10;
+        details.push('Midday - reduced activity');
+    }
+
+    // Wind speed - moderate wind ideal (birds perch on exposed stems)
+    if (windSpeed >= 8 && windSpeed <= 15) {
+        score += 20;
+        details.push('Ideal wind for grassland birds');
+    } else if (windSpeed < 8) {
+        score += 10;
+        details.push('Calm - birds may be less visible');
+    } else if (windSpeed > 20) {
+        score -= 15;
+        details.push('Too windy - birds hunkered down');
+    } else {
+        score += 5;
+        details.push('Moderate wind');
+    }
+
+    // Visibility - need good visibility for open habitat
+    const visibilityMiles = visibility / 1609.34;
+    if (visibilityMiles > 10) {
+        score += 15;
+        details.push('Excellent visibility');
+    } else if (visibilityMiles >= 5) {
+        score += 10;
+        details.push('Good visibility');
+    } else if (visibilityMiles < 2) {
+        score -= 15;
+        details.push('Poor visibility - difficult scanning');
+    }
+
+    // Temperature - moderate temps best
+    if (temp >= 50 && temp <= 75) {
+        score += 15;
+        details.push('Ideal temps for activity');
+    } else if (temp >= 40 && temp < 50) {
+        score += 10;
+        details.push('Cool - check for longspurs');
+    } else if (temp < 35) {
+        score += 5;
+        details.push('Cold - look for winter sparrows');
+    } else if (temp > 85) {
+        score -= 10;
+        details.push('Hot - early morning only');
+    }
+
+    // Humidity - lower humidity better for open grasslands
+    if (humidity < 60) {
+        score += 5;
+        details.push('Low humidity - clear conditions');
+    } else if (humidity > 85) {
+        score -= 5;
+        details.push('High humidity - possible fog');
+    }
+
+    score = Math.max(0, Math.min(100, score));
+
+    return {
+        score,
+        rating: getScoreRating(score),
+        details
+    };
+}
+
+/**
+ * Woodland Birds Scoring (Inland alternative to Shorebirds)
+ * Ideal: Light wind <10mph, overcast OK, 55-75°F, high humidity
+ * Good for: woodpeckers, warblers, thrushes, vireos, forest raptors
+ * @param {number} windSpeed - Wind speed in mph
+ * @param {number} weatherCode - WMO weather code
+ * @param {number} temp - Temperature in Fahrenheit
+ * @param {number} humidity - Relative humidity percentage
+ * @param {number} hour - Hour of day (0-23)
+ * @returns {object} Score and rating
+ */
+export function scoreWoodlandBirds(windSpeed, weatherCode, temp, humidity, hour = 7) {
+    let score = 40;
+    const details = [];
+
+    // Time of day - woodland birds most active early morning
+    const isDawn = hour >= 5 && hour < 9;
+    const isMorning = hour >= 9 && hour < 11;
+    const isMidday = hour >= 12 && hour < 15;
+
+    if (isDawn) {
+        score += 25;
+        details.push('Dawn chorus - peak woodland activity');
+    } else if (isMorning) {
+        score += 15;
+        details.push('Morning - good foraging activity');
+    } else if (isMidday) {
+        score -= 10;
+        details.push('Midday lull - check water sources');
+    }
+
+    // Wind - calm is critical for woodland birding
+    if (windSpeed < 8) {
+        score += 20;
+        details.push('Calm - excellent for hearing calls');
+    } else if (windSpeed < 12) {
+        score += 10;
+        details.push('Light wind - good conditions');
+    } else if (windSpeed > 18) {
+        score -= 20;
+        details.push('Windy - difficult to hear/spot birds');
+    } else {
+        score -= 5;
+        details.push('Breezy - some noise interference');
+    }
+
+    // Weather conditions - overcast can extend activity
+    if (weatherCode <= 2) {
+        score += 15;
+        details.push('Clear skies - active feeding');
+    } else if (weatherCode === 3) {
+        score += 20;
+        details.push('Overcast - extended activity period');
+    } else if (weatherCode >= 45 && weatherCode < 50) {
+        score += 5;
+        details.push('Foggy - birds stay lower');
+    } else if (weatherCode >= 50 && weatherCode < 70) {
+        score -= 5;
+        details.push('Light precip - some shelter-seeking');
+    } else if (weatherCode >= 70) {
+        score -= 15;
+        details.push('Heavy precip - birds sheltering');
+    }
+
+    // Temperature - mild temps best for activity
+    if (temp >= 55 && temp <= 75) {
+        score += 15;
+        details.push('Ideal temps for woodland birds');
+    } else if (temp >= 45 && temp < 55) {
+        score += 10;
+        details.push('Cool - insect activity reduced');
+    } else if (temp < 40) {
+        score += 5;
+        details.push('Cold - check feeders, mixed flocks');
+    } else if (temp > 80) {
+        score -= 10;
+        details.push('Hot - seek shaded areas');
+    }
+
+    // Humidity - higher humidity often means more insects
+    if (humidity >= 60 && humidity <= 80) {
+        score += 10;
+        details.push('Good humidity - insects active');
+    } else if (humidity > 90) {
+        score -= 5;
+        details.push('Very humid - possible rain');
+    } else if (humidity < 40) {
+        score -= 5;
+        details.push('Dry - reduced insect activity');
+    }
+
+    score = Math.max(0, Math.min(100, score));
+
+    return {
+        score,
+        rating: getScoreRating(score),
+        details
+    };
+}
