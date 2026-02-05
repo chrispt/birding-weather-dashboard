@@ -121,8 +121,11 @@ async function init() {
     // Load settings into form
     loadSettingsForm();
 
-    // Initialize location
-    const hasLocation = await initializeLocation();
+    // Initialize location (pass callback to reload data when GPS returns different location)
+    const hasLocation = await initializeLocation(async () => {
+        await loadWeatherData();
+        await loadHotspots();
+    });
 
     if (hasLocation) {
         await loadWeatherData();

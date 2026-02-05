@@ -89,13 +89,14 @@ export async function reverseGeocode(lat, lon) {
 }
 
 /**
- * Initialize location - uses stored location immediately, then refreshes in background
- * @returns {Promise<boolean>} True if location was obtained
+ * Initialize location - uses stored location immediately, then fetches GPS in background
+ * @param {Function} onLocationUpdate - Optional callback when GPS returns different location
+ * @returns {Promise<boolean>} True if location was obtained (from stored or GPS)
  */
-export async function initializeLocation() {
+export async function initializeLocation(onLocationUpdate = null) {
     store.set('isLoading', true);
 
-    // Check for stored location FIRST - use it immediately for fast startup
+    // Use stored location immediately for fast startup
     const lastLocation = getLastLocation();
     if (lastLocation) {
         store.update({
@@ -105,16 +106,15 @@ export async function initializeLocation() {
         });
         store.set('isLoading', false);
 
-        // Refresh location in background (user may have moved)
-        refreshLocationInBackground();
+        // Fetch GPS in background and update if location changed
+        fetchGpsInBackground(lastLocation, onLocationUpdate);
         return true;
     }
 
-    // No stored location - must wait for geolocation
+    // No stored location - must wait for GPS
     const position = await getCurrentPosition();
 
     if (position) {
-        // Update immediately with coordinates (shows "40.71, -74.01" format)
         store.update({
             userLat: position.lat,
             userLon: position.lon,
@@ -122,7 +122,7 @@ export async function initializeLocation() {
         });
         store.set('isLoading', false);
 
-        // Fetch location name in background (non-blocking)
+        // Fetch location name in background
         reverseGeocode(position.lat, position.lon).then(name => {
             if (name) {
                 store.set('locationName', name);
@@ -138,37 +138,42 @@ export async function initializeLocation() {
 }
 
 /**
- * Refresh location in background without blocking UI
- * Used after initial load to update if user has moved
+ * Fetch GPS position in background and update if significantly different
+ * @param {Object} lastLocation - Previous location to compare against
+ * @param {Function} onLocationUpdate - Callback when location changes significantly
  */
-async function refreshLocationInBackground() {
+async function fetchGpsInBackground(lastLocation, onLocationUpdate) {
     const position = await getCurrentPosition();
-    if (position) {
-        const lastLocation = getLastLocation();
+    if (!position) return;
 
-        // Only update if position changed significantly (>100m)
-        if (lastLocation) {
-            const distance = getDistanceKm(
-                lastLocation.lat, lastLocation.lon,
-                position.lat, position.lon
-            );
-            if (distance < 0.1) {
-                // Position hasn't changed significantly, skip update
-                return;
-            }
-        }
+    // Check if position changed significantly (>100m)
+    const distance = getDistanceKm(
+        lastLocation.lat, lastLocation.lon,
+        position.lat, position.lon
+    );
 
-        // Position changed, update store and get new name
-        store.update({
-            userLat: position.lat,
-            userLon: position.lon
-        });
+    if (distance < 0.1) {
+        // Position hasn't changed significantly, skip update
+        return;
+    }
 
-        const name = await reverseGeocode(position.lat, position.lon);
-        if (name) {
-            store.set('locationName', name);
-            saveLastLocation(position.lat, position.lon, name);
-        }
+    // Position changed, update store
+    store.update({
+        userLat: position.lat,
+        userLon: position.lon,
+        locationName: `${position.lat.toFixed(2)}, ${position.lon.toFixed(2)}`
+    });
+
+    // Fetch location name
+    const name = await reverseGeocode(position.lat, position.lon);
+    if (name) {
+        store.set('locationName', name);
+        saveLastLocation(position.lat, position.lon, name);
+    }
+
+    // Call the update callback to reload weather/hotspots
+    if (onLocationUpdate) {
+        onLocationUpdate();
     }
 }
 
