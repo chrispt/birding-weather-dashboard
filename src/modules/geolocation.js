@@ -89,6 +89,68 @@ export async function reverseGeocode(lat, lon) {
 }
 
 /**
+ * Search for addresses using forward geocoding
+ * @param {string} query - Search query (address, place name, etc.)
+ * @returns {Promise<Array<{lat: number, lon: number, name: string}>}
+ */
+export async function searchAddress(query) {
+    if (!query || query.trim().length < 3) {
+        return [];
+    }
+
+    try {
+        const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&addressdetails=1`;
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+        const response = await fetch(url, {
+            signal: controller.signal,
+            headers: {
+                'User-Agent': 'BirdingWeatherDashboard/1.0'
+            }
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) return [];
+
+        const data = await response.json();
+
+        return data.map(item => {
+            // Build a cleaner display name
+            const addr = item.address || {};
+            const parts = [];
+
+            if (addr.city || addr.town || addr.village || addr.hamlet) {
+                parts.push(addr.city || addr.town || addr.village || addr.hamlet);
+            }
+            if (addr.state) {
+                parts.push(addr.state);
+            }
+            if (addr.country_code && addr.country_code !== 'us') {
+                parts.push(addr.country);
+            }
+
+            const name = parts.length > 0 ? parts.join(', ') : item.display_name.split(',').slice(0, 2).join(',');
+
+            return {
+                lat: parseFloat(item.lat),
+                lon: parseFloat(item.lon),
+                name: name
+            };
+        });
+    } catch (error) {
+        if (error.name === 'AbortError') {
+            console.warn('Address search timed out');
+        } else {
+            console.warn('Address search failed:', error);
+        }
+        return [];
+    }
+}
+
+/**
  * Get approximate location from IP address (fast, city-level accuracy)
  * @returns {Promise<{lat: number, lon: number, name: string}|null>}
  */

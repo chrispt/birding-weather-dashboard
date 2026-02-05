@@ -70,6 +70,8 @@ body {
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-xl);
     margin-bottom: var(--spacing-xl);
+    position: relative;
+    z-index: var(--z-sticky);
 }
 
 .location-bar__info {
@@ -169,6 +171,52 @@ body {
     color: var(--color-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.1em;
+}
+
+.location-dropdown__search {
+    width: calc(100% - var(--spacing-md) * 2);
+    margin: var(--spacing-sm) var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text-primary);
+    font-size: var(--font-size-sm);
+}
+
+.location-dropdown__search::placeholder {
+    color: var(--color-text-muted);
+}
+
+.location-dropdown__search:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+}
+
+.location-dropdown__results {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.location-dropdown__item--saved {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.location-dropdown__item--saved .delete-btn {
+    opacity: 0.5;
+    padding: 2px 8px;
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    font-size: var(--font-size-sm);
+}
+
+.location-dropdown__item--saved:hover .delete-btn {
+    opacity: 1;
+    color: var(--color-error);
 }
 
 /* Dashboard - Vertical Stack Layout */

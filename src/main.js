@@ -3,7 +3,7 @@
  */
 
 import store from './state/store.js';
-import { initializeLocation, setLocation } from './modules/geolocation.js';
+import { initializeLocation, setLocation, searchAddress } from './modules/geolocation.js';
 import { fetchWeatherForecast, getWeatherDescription } from './api/openMeteo.js';
 import { fetchNearbyHotspots } from './api/ebird.js';
 import {
@@ -84,7 +84,13 @@ const elements = {
     // Location dropdown
     locationDropdownBtn: document.getElementById('location-dropdown-btn'),
     locationDropdown: document.getElementById('location-dropdown'),
+    locationSearch: document.getElementById('location-search'),
+    searchResults: document.getElementById('search-results'),
     useCurrentLocation: document.getElementById('use-current-location'),
+    saveCurrentLocation: document.getElementById('save-current-location'),
+    savedLocations: document.getElementById('saved-locations'),
+    savedDivider: document.getElementById('saved-divider'),
+    savedLabel: document.getElementById('saved-label'),
     recentLocations: document.getElementById('recent-locations'),
     recentDivider: document.getElementById('recent-divider'),
     recentLabel: document.getElementById('recent-label'),
@@ -168,6 +174,8 @@ function setupEventListeners() {
     elements.locationName.addEventListener('click', toggleLocationDropdown);
     elements.locationName.style.cursor = 'pointer';
     elements.useCurrentLocation.addEventListener('click', handleUseCurrentLocation);
+    elements.saveCurrentLocation.addEventListener('click', handleSaveCurrentLocation);
+    elements.locationSearch.addEventListener('input', debounce(handleLocationSearch, 300));
 
     // Close dropdown when clicking outside
     document.addEventListener('click', (e) => {
@@ -895,11 +903,29 @@ function saveSettings() {
  * Location dropdown management
  */
 const RECENT_LOCATIONS_KEY = 'birdingWeather_recentLocations';
+const SAVED_LOCATIONS_KEY = 'birdingWeather_savedLocations';
 const MAX_RECENT_LOCATIONS = 5;
+
+// Debounce helper for search input
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
 
 function toggleLocationDropdown() {
     const isHidden = elements.locationDropdown.classList.contains('hidden');
     if (isHidden) {
+        elements.locationSearch.value = '';
+        elements.searchResults.classList.add('hidden');
+        elements.searchResults.innerHTML = '';
+        renderSavedLocations();
         renderRecentLocations();
         elements.locationDropdown.classList.remove('hidden');
     } else {
@@ -998,6 +1024,150 @@ function renderRecentLocations() {
 
             await setLocation(lat, lon, name);
             await loadWeatherData();
+
+            if (map) {
+                map.setView([lat, lon], 11);
+            }
+        });
+    });
+}
+
+/**
+ * Saved locations management
+ */
+function getSavedLocations() {
+    try {
+        const stored = localStorage.getItem(SAVED_LOCATIONS_KEY);
+        return stored ? JSON.parse(stored) : [];
+    } catch {
+        return [];
+    }
+}
+
+function saveLocation(lat, lon, name) {
+    if (!name) return;
+
+    let saved = getSavedLocations();
+
+    // Don't add if already exists
+    if (saved.some(loc => loc.name === name)) return;
+
+    saved.push({ lat, lon, name });
+    localStorage.setItem(SAVED_LOCATIONS_KEY, JSON.stringify(saved));
+}
+
+function deleteSavedLocation(name) {
+    let saved = getSavedLocations();
+    saved = saved.filter(loc => loc.name !== name);
+    localStorage.setItem(SAVED_LOCATIONS_KEY, JSON.stringify(saved));
+}
+
+function handleSaveCurrentLocation() {
+    const lat = store.get('userLat');
+    const lon = store.get('userLon');
+    const name = store.get('locationName');
+
+    if (!lat || !lon || !name) {
+        alert('No location to save');
+        return;
+    }
+
+    saveLocation(lat, lon, name);
+    renderSavedLocations();
+}
+
+function renderSavedLocations() {
+    const saved = getSavedLocations();
+
+    if (saved.length === 0) {
+        elements.savedDivider.classList.add('hidden');
+        elements.savedLabel.classList.add('hidden');
+        elements.savedLocations.innerHTML = '';
+        return;
+    }
+
+    elements.savedDivider.classList.remove('hidden');
+    elements.savedLabel.classList.remove('hidden');
+
+    elements.savedLocations.innerHTML = saved.map(loc => `
+        <div class="location-dropdown__item location-dropdown__item--saved" data-lat="${loc.lat}" data-lon="${loc.lon}" data-name="${loc.name}">
+            <span>${loc.name}</span>
+            <button class="delete-btn" data-name="${loc.name}">×</button>
+        </div>
+    `).join('');
+
+    // Add click handlers for location selection
+    elements.savedLocations.querySelectorAll('.location-dropdown__item--saved').forEach(item => {
+        item.addEventListener('click', async (e) => {
+            if (e.target.classList.contains('delete-btn')) return;
+
+            const lat = parseFloat(item.dataset.lat);
+            const lon = parseFloat(item.dataset.lon);
+            const name = item.dataset.name;
+
+            elements.locationDropdown.classList.add('hidden');
+
+            await setLocation(lat, lon, name);
+            await loadWeatherData();
+
+            if (map) {
+                map.setView([lat, lon], 11);
+            }
+        });
+    });
+
+    // Add click handlers for delete buttons
+    elements.savedLocations.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const name = btn.dataset.name;
+            deleteSavedLocation(name);
+            renderSavedLocations();
+        });
+    });
+}
+
+/**
+ * Location search
+ */
+async function handleLocationSearch(e) {
+    const query = e.target.value.trim();
+
+    if (query.length < 3) {
+        elements.searchResults.classList.add('hidden');
+        elements.searchResults.innerHTML = '';
+        return;
+    }
+
+    const results = await searchAddress(query);
+
+    if (results.length === 0) {
+        elements.searchResults.innerHTML = '<div class="location-dropdown__item" style="color: var(--color-text-muted);">No results found</div>';
+        elements.searchResults.classList.remove('hidden');
+        return;
+    }
+
+    elements.searchResults.innerHTML = results.map(loc => `
+        <button class="location-dropdown__item" data-lat="${loc.lat}" data-lon="${loc.lon}" data-name="${loc.name}">
+            ${loc.name}
+        </button>
+    `).join('');
+
+    elements.searchResults.classList.remove('hidden');
+
+    // Add click handlers
+    elements.searchResults.querySelectorAll('.location-dropdown__item').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const lat = parseFloat(btn.dataset.lat);
+            const lon = parseFloat(btn.dataset.lon);
+            const name = btn.dataset.name;
+
+            elements.locationDropdown.classList.add('hidden');
+            addRecentLocation(lat, lon, name);
+
+            await setLocation(lat, lon, name);
+            await loadWeatherData();
+            await loadHotspots();
 
             if (map) {
                 map.setView([lat, lon], 11);
