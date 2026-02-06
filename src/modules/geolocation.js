@@ -160,8 +160,8 @@ export async function reverseGeocode(lat, lon) {
 }
 
 /**
- * Search for addresses using forward geocoding
- * @param {string} query - Search query (address, place name, etc.)
+ * Search for addresses and POIs using forward geocoding
+ * @param {string} query - Search query (address, place name, POI, etc.)
  * @returns {Promise<Array<{lat: number, lon: number, name: string}>}
  */
 export async function searchAddress(query) {
@@ -170,7 +170,19 @@ export async function searchAddress(query) {
     }
 
     try {
-        const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&addressdetails=1`;
+        // Build search URL with location bias if user location is available
+        const userLat = store.get('userLat');
+        const userLon = store.get('userLon');
+
+        let url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=8&addressdetails=1&extratags=1`;
+
+        // Add location bias - creates a viewbox around user's location (~100 miles)
+        // This prioritizes results near the user without excluding distant results
+        if (userLat && userLon) {
+            const bias = 1.5; // ~100 miles in degrees
+            const viewbox = `${userLon - bias},${userLat + bias},${userLon + bias},${userLat - bias}`;
+            url += `&viewbox=${viewbox}&bounded=0`;
+        }
 
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
@@ -189,47 +201,58 @@ export async function searchAddress(query) {
         const data = await response.json();
 
         return data.map(item => {
-            // Build a cleaner display name including street address
+            // Build a cleaner display name - handle POIs (parks, businesses, etc.)
             const addr = item.address || {};
             const parts = [];
 
-            // Include street address if present
-            if (addr.house_number && addr.road) {
+            // Check for POI name first (parks, nature reserves, businesses, etc.)
+            // Nominatim returns these in various address fields
+            const poiName = addr.leisure || addr.tourism || addr.amenity || addr.natural ||
+                           addr.park || addr.nature_reserve || addr.building ||
+                           item.name; // item.name contains the matched POI name
+
+            // If this is a POI (not just an address), show the POI name first
+            const isPoi = item.class === 'leisure' || item.class === 'tourism' ||
+                         item.class === 'amenity' || item.class === 'natural' ||
+                         item.type === 'park' || item.type === 'nature_reserve' ||
+                         item.type === 'protected_area';
+
+            if (isPoi && item.name) {
+                parts.push(item.name);
+            } else if (addr.house_number && addr.road) {
+                // Include street address if present
                 parts.push(`${addr.house_number} ${addr.road}`);
             } else if (addr.road) {
                 parts.push(addr.road);
             }
 
             // Include city/town (check multiple fields for rural areas)
-            // Nominatim uses different fields depending on location type
             const specificLocality = addr.city || addr.town || addr.village || addr.hamlet ||
                                      addr.place || addr.locality || addr.neighbourhood || addr.suburb;
             const broaderLocality = addr.municipality || addr.county;
 
             // If no specific locality found, try to extract from display_name
-            // display_name format: "800 Thompson Ridge Road, Ferrum, Franklin County, Virginia, USA"
             let locality = specificLocality;
             if (!locality && item.display_name) {
                 const displayParts = item.display_name.split(', ');
-                // Look for a locality after the street address but before county/state
-                // Skip parts that look like street addresses, counties, states, or countries
                 for (let i = 1; i < displayParts.length - 2; i++) {
                     const part = displayParts[i];
-                    // Skip if it looks like a county or the state
                     if (part.includes('County') || part === addr.state || part === addr.country) {
                         continue;
                     }
-                    // Skip if it matches the road name
                     if (addr.road && part.includes(addr.road)) {
                         continue;
                     }
-                    // This is likely the locality name
+                    // Skip if it's the same as the POI name we already added
+                    if (item.name && part === item.name) {
+                        continue;
+                    }
                     locality = part;
                     break;
                 }
             }
 
-            // Prefer specific locality (town name) over broader (county)
+            // Add locality
             if (locality) {
                 parts.push(locality);
             } else if (broaderLocality) {
