@@ -29,7 +29,8 @@ import {
     formatTime,
     formatRelativeTime,
     formatCountdown,
-    convertWindSpeed
+    convertWindSpeed,
+    convertTemperature
 } from './utils/formatting.js';
 import { REFRESH_INTERVAL_SECONDS } from './config/constants.js';
 
@@ -361,6 +362,10 @@ async function calculateBirdingConditions(weatherData) {
     // Convert wind speed to mph for scoring
     const windSpeedMph = convertWindSpeed(current.windSpeed, 'mph');
 
+    // Convert temperature to Fahrenheit for scoring functions,
+    // which are defined using Fahrenheit thresholds
+    const tempF = convertTemperature(current.temperature, 'F');
+
     // Check if location is coastal (if not already checked)
     const lat = store.get('userLat');
     const lon = store.get('userLon');
@@ -414,7 +419,7 @@ async function calculateBirdingConditions(weatherData) {
         const grassland = scoreGrasslandBirds(
             windSpeedMph,
             current.visibility,
-            current.temperature,
+            tempF,
             current.humidity,
             hour
         );
@@ -424,7 +429,7 @@ async function calculateBirdingConditions(weatherData) {
         const woodland = scoreWoodlandBirds(
             windSpeedMph,
             current.weatherCode,
-            current.temperature,
+            tempF,
             current.humidity,
             hour
         );
@@ -442,7 +447,7 @@ async function calculateBirdingConditions(weatherData) {
 
     // Songbird Activity score (year-round)
     const songbirdActivity = scoreSongbirdActivity(
-        current.temperature,
+        tempF,
         current.weatherCode,
         windSpeedMph,
         hour
@@ -451,7 +456,7 @@ async function calculateBirdingConditions(weatherData) {
 
     // Waterfowl score
     const waterfowl = scoreWaterfowl(
-        current.temperature,
+        tempF,
         windSpeedMph,
         current.visibility,
         pressure.trend
@@ -461,7 +466,7 @@ async function calculateBirdingConditions(weatherData) {
     // Owling score
     const owling = scoreOwling(
         windSpeedMph,
-        current.temperature,
+        tempF,
         current.weatherCode,
         current.humidity,
         hour

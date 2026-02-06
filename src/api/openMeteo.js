@@ -38,6 +38,12 @@ export async function fetchWeatherForecast(lat, lon, options = {}) {
 
     // Transform the data into a more usable format
     const transformed = transformWeatherData(data);
+    if (!transformed) {
+        return {
+            data: null,
+            error: new Error('Received unexpected weather data format from Open-Meteo')
+        };
+    }
     return { data: transformed, error: null };
 }
 

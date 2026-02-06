@@ -297,7 +297,9 @@ async function getIpLocation() {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 3000);
 
-        const response = await fetch('http://ip-api.com/json/?fields=lat,lon,city,regionName,country', {
+        // Use ipapi.co for approximate IP-based geolocation over HTTPS
+        // Docs: https://ipapi.co/api/
+        const response = await fetch('https://ipapi.co/json/', {
             signal: controller.signal
         });
 
@@ -306,11 +308,27 @@ async function getIpLocation() {
         if (!response.ok) return null;
 
         const data = await response.json();
-        if (data.lat && data.lon) {
-            const name = data.country === 'United States'
-                ? `${data.city}, ${data.regionName}`
-                : `${data.city}, ${data.country}`;
-            return { lat: data.lat, lon: data.lon, name };
+        if (data.latitude && data.longitude) {
+            const lat = data.latitude;
+            const lon = data.longitude;
+
+            // Build a friendly location name; keep US vs non-US handling
+            const city = data.city;
+            const region = data.region;
+            const countryName = data.country_name || data.country || '';
+
+            let name;
+            if (data.country_code === 'US' && city && region) {
+                name = `${city}, ${region}`;
+            } else if (city && countryName) {
+                name = `${city}, ${countryName}`;
+            } else if (city) {
+                name = city;
+            } else {
+                name = countryName || `${lat.toFixed(2)}, ${lon.toFixed(2)}`;
+            }
+
+            return { lat, lon, name };
         }
     } catch (error) {
         console.warn('IP geolocation failed:', error);
