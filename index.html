@@ -31,17 +31,22 @@
             <div class="location-bar__info">
                 <div class="location-bar__selector">
                     <span class="location-bar__name" id="location-name">Loading location...</span>
-                    <button class="btn btn--icon location-bar__dropdown-btn" id="location-dropdown-btn" aria-label="Select location">
+                    <button class="btn btn--icon location-bar__dropdown-btn" id="location-dropdown-btn"
+                            aria-label="Select location"
+                            aria-expanded="false"
+                            aria-haspopup="true">
                         ▼
                     </button>
                 </div>
                 <div class="location-dropdown hidden" id="location-dropdown">
                     <input type="text" id="location-search" class="location-dropdown__search" placeholder="Search address...">
                     <div id="search-results" class="location-dropdown__results hidden"></div>
-                    <button class="location-dropdown__item location-dropdown__item--current" id="use-current-location">
+                    <button class="location-dropdown__item location-dropdown__item--current" id="use-current-location"
+                            aria-label="Use your current GPS location">
                         📍 Use Current Location
                     </button>
-                    <button class="location-dropdown__item" id="save-current-location">
+                    <button class="location-dropdown__item" id="save-current-location"
+                            aria-label="Save current location to favorites">
                         ⭐ Save Current Location
                     </button>
                     <div class="location-dropdown__divider" id="saved-divider"></div>
@@ -50,7 +55,8 @@
                     <div class="location-dropdown__divider" id="recent-divider"></div>
                     <div class="location-dropdown__label" id="recent-label">
                         Recent Locations
-                        <button class="clear-btn" id="clear-recent-locations">Clear</button>
+                        <button class="clear-btn" id="clear-recent-locations"
+                                aria-label="Clear recent locations history">Clear</button>
                     </div>
                     <div id="recent-locations"></div>
                 </div>
@@ -180,7 +186,8 @@
                 <p class="section-subheader">Click any score for details</p>
                 <div class="dashboard-section__grid dashboard-section__grid--scores">
                     <!-- Hawk Watch Score -->
-                    <div class="widget widget--score" id="hawk-widget" data-score-type="hawkWatchScore">
+                    <div class="widget widget--score" id="hawk-widget" data-score-type="hawkWatchScore"
+                         tabindex="0" role="button" aria-label="Hawk Watch score - click for details">
                         <div class="widget__header">
                             <span class="widget__title">Hawk Watch</span>
                         </div>
@@ -205,7 +212,8 @@
                     </div>
 
                     <!-- Seabird Score -->
-                    <div class="widget widget--score" id="seabird-widget" data-score-type="seabirdScore">
+                    <div class="widget widget--score" id="seabird-widget" data-score-type="seabirdScore"
+                         tabindex="0" role="button" aria-label="Seabird score - click for details">
                         <div class="widget__header">
                             <span class="widget__title">Seabird/Coastal</span>
                         </div>
@@ -230,7 +238,8 @@
                     </div>
 
                     <!-- Shorebird Score -->
-                    <div class="widget widget--score" id="shorebird-widget" data-score-type="shorebirdScore">
+                    <div class="widget widget--score" id="shorebird-widget" data-score-type="shorebirdScore"
+                         tabindex="0" role="button" aria-label="Shorebird score - click for details">
                         <div class="widget__header">
                             <span class="widget__title">Shorebirds</span>
                         </div>
@@ -255,7 +264,8 @@
                     </div>
 
                     <!-- Songbird Migration Score (hidden outside migration seasons) -->
-                    <div class="widget widget--score" id="songbird-migration-widget" data-score-type="songbirdMigrationScore">
+                    <div class="widget widget--score" id="songbird-migration-widget" data-score-type="songbirdMigrationScore"
+                         tabindex="0" role="button" aria-label="Songbird Migration score - click for details">
                         <div class="widget__header">
                             <span class="widget__title">Songbird Migration</span>
                         </div>
@@ -280,7 +290,8 @@
                     </div>
 
                     <!-- Songbird Activity Score (year-round) -->
-                    <div class="widget widget--score" id="songbird-activity-widget" data-score-type="songbirdActivityScore">
+                    <div class="widget widget--score" id="songbird-activity-widget" data-score-type="songbirdActivityScore"
+                         tabindex="0" role="button" aria-label="Songbird Activity score - click for details">
                         <div class="widget__header">
                             <span class="widget__title">Songbird Activity</span>
                         </div>
@@ -305,7 +316,8 @@
                     </div>
 
                     <!-- Waterfowl Score -->
-                    <div class="widget widget--score" id="waterfowl-widget" data-score-type="waterfowlScore">
+                    <div class="widget widget--score" id="waterfowl-widget" data-score-type="waterfowlScore"
+                         tabindex="0" role="button" aria-label="Waterfowl score - click for details">
                         <div class="widget__header">
                             <span class="widget__title">Waterfowl</span>
                         </div>
@@ -330,7 +342,8 @@
                     </div>
 
                     <!-- Owling/Nocturnal Score -->
-                    <div class="widget widget--score" id="owling-widget" data-score-type="owlingScore">
+                    <div class="widget widget--score" id="owling-widget" data-score-type="owlingScore"
+                         tabindex="0" role="button" aria-label="Owling score - click for details">
                         <div class="widget__header">
                             <span class="widget__title">Owling</span>
                         </div>
@@ -358,7 +371,7 @@
 
             <!-- ==================== HOTSPOTS SECTION ==================== -->
             <section class="dashboard-section">
-                <h2 class="section-header">Nearby Hotspots</h2>
+                <h2 class="section-header" id="hotspots-header">Nearby Hotspots</h2>
                 <div class="widget widget--full-width" id="map-widget">
                     <div class="map-container" id="map"></div>
                 </div>

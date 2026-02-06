@@ -896,6 +896,22 @@ body {
     font-variant-numeric: tabular-nums;
 }
 
+/* Refresh success indicator */
+.location-bar__update.refresh-flash {
+    animation: refresh-flash 1s ease-out;
+}
+
+@keyframes refresh-flash {
+    0% {
+        color: var(--accent-green);
+        text-shadow: 0 0 8px rgba(0, 255, 136, 0.6);
+    }
+    100% {
+        color: var(--color-text-secondary);
+        text-shadow: none;
+    }
+}
+
 /* Score value animation on change */
 .gauge-value.updating {
     animation: score-bump 0.3s ease-out;

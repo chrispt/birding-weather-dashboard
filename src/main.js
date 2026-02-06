@@ -189,6 +189,7 @@ function setupEventListeners() {
             !elements.locationDropdownBtn.contains(e.target) &&
             !elements.locationName.contains(e.target)) {
             elements.locationDropdown.classList.add('hidden');
+            elements.locationDropdownBtn.setAttribute('aria-expanded', 'false');
         }
     });
 
@@ -203,11 +204,20 @@ function setupEventListeners() {
         elements.locationName.textContent = currentLocationName;
     }
 
-    // Score details modal - click handlers for score widgets
+    // Score details modal - click and keyboard handlers for score widgets
     document.querySelectorAll('.widget--score[data-score-type]').forEach(widget => {
         widget.addEventListener('click', () => {
             const scoreType = widget.dataset.scoreType;
             openScoreDetails(scoreType);
+        });
+
+        // Keyboard support for accessibility
+        widget.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                const scoreType = widget.dataset.scoreType;
+                openScoreDetails(scoreType);
+            }
         });
     });
 
@@ -233,6 +243,64 @@ function setupEventListeners() {
 }
 
 /**
+ * Change to a new location - unified function to reduce code duplication
+ * @param {number} lat - Latitude
+ * @param {number} lon - Longitude
+ * @param {string|null} name - Location name (null to reverse geocode)
+ * @param {object} options - Optional settings
+ * @param {boolean} options.updateMap - Update map center (default: true)
+ * @param {boolean} options.loadHotspots - Reload hotspots (default: false)
+ * @param {boolean} options.addToRecent - Add to recent locations (default: false)
+ * @param {number} options.zoomLevel - Map zoom level (default: 11)
+ */
+async function changeLocation(lat, lon, name, options = {}) {
+    const {
+        updateMap = true,
+        loadHotspots: shouldLoadHotspots = false,
+        addToRecent = false,
+        zoomLevel = 11
+    } = options;
+
+    // Reset coastal status for new location
+    store.update({ isCoastalLocation: null, coastType: null });
+
+    // Update location in store
+    await setLocation(lat, lon, name);
+
+    // Add to recent locations if requested
+    if (addToRecent && name) {
+        addRecentLocation(lat, lon, name);
+    }
+
+    // Load weather data
+    await loadWeatherData();
+
+    // Optionally load hotspots
+    if (shouldLoadHotspots) {
+        await loadHotspots();
+    }
+
+    // Update map if requested and map exists
+    if (updateMap && map) {
+        map.setView([lat, lon], zoomLevel);
+        updateUserMarker(lat, lon);
+    }
+}
+
+/**
+ * Toggle loading state on weather widgets
+ */
+function setWidgetsLoading(isLoading) {
+    const widgetIds = ['current-widget', 'wind-widget', 'visibility-widget', 'precip-widget', 'pressure-widget'];
+    widgetIds.forEach(id => {
+        const widget = document.getElementById(id);
+        if (widget) {
+            widget.classList.toggle('widget--loading', isLoading);
+        }
+    });
+}
+
+/**
  * Load weather data from API
  */
 async function loadWeatherData() {
@@ -242,6 +310,7 @@ async function loadWeatherData() {
     if (!lat || !lon) return;
 
     store.set('isLoading', true);
+    setWidgetsLoading(true);
 
     const { data, error } = await fetchWeatherForecast(lat, lon);
 
@@ -249,6 +318,7 @@ async function loadWeatherData() {
         console.error('Failed to fetch weather:', error);
         store.set('error', error.message);
         store.set('isLoading', false);
+        setWidgetsLoading(false);
         return;
     }
 
@@ -418,6 +488,9 @@ async function calculateBirdingConditions(weatherData) {
 function renderWeatherData(weatherData) {
     const { current, hourlyForecast } = weatherData;
 
+    // Remove loading state from widgets
+    setWidgetsLoading(false);
+
     // Current conditions
     elements.currentTemp.textContent = formatTemperature(current.temperature);
     elements.currentConditions.textContent = getWeatherDescription(current.weatherCode);
@@ -469,8 +542,12 @@ function renderWeatherData(weatherData) {
     // Front alert
     renderFrontAlert();
 
-    // Last update
+    // Last update with refresh indicator
     elements.lastUpdate.textContent = `Updated ${formatRelativeTime(new Date())}`;
+    elements.lastUpdate.classList.remove('refresh-flash');
+    // Trigger reflow to restart animation
+    void elements.lastUpdate.offsetWidth;
+    elements.lastUpdate.classList.add('refresh-flash');
 }
 
 /**
@@ -733,9 +810,17 @@ async function loadHotspots() {
  * Render hotspot cards
  */
 function renderHotspots(hotspots) {
+    const headerEl = document.getElementById('hotspots-header');
+
     if (!hotspots || hotspots.length === 0) {
         elements.hotspots.innerHTML = '';
+        if (headerEl) headerEl.textContent = 'Nearby Hotspots';
         return;
+    }
+
+    // Update header with count
+    if (headerEl) {
+        headerEl.textContent = `Nearby Hotspots (${hotspots.length})`;
     }
 
     const top6 = hotspots.slice(0, 6);
@@ -754,18 +839,10 @@ function renderHotspots(hotspots) {
             const lon = parseFloat(card.dataset.lon);
             const name = card.dataset.name;
 
-            // Center map on hotspot and update user marker
-            if (map) {
-                map.setView([lat, lon], 14);
-                updateUserMarker(lat, lon);
-            }
-
-            // Add to recent locations and fetch weather
-            addRecentLocation(lat, lon, name);
-            // Reset coastal status for new location
-            store.update({ isCoastalLocation: null, coastType: null });
-            await setLocation(lat, lon, name);
-            await loadWeatherData();
+            await changeLocation(lat, lon, name, {
+                addToRecent: true,
+                zoomLevel: 14
+            });
         });
     });
 }
@@ -1172,13 +1249,16 @@ function toggleLocationDropdown() {
         renderSavedLocations();
         renderRecentLocations();
         elements.locationDropdown.classList.remove('hidden');
+        elements.locationDropdownBtn.setAttribute('aria-expanded', 'true');
     } else {
         elements.locationDropdown.classList.add('hidden');
+        elements.locationDropdownBtn.setAttribute('aria-expanded', 'false');
     }
 }
 
 async function handleUseCurrentLocation() {
     elements.locationDropdown.classList.add('hidden');
+    elements.locationDropdownBtn.setAttribute('aria-expanded', 'false');
 
     // Get fresh GPS position
     if (!navigator.geolocation) {
@@ -1191,17 +1271,9 @@ async function handleUseCurrentLocation() {
     navigator.geolocation.getCurrentPosition(
         async (position) => {
             const { latitude, longitude } = position.coords;
-            // Reset coastal status for new location
-            store.update({ isCoastalLocation: null, coastType: null });
-            await setLocation(latitude, longitude, null);
-            await loadWeatherData();
-            await loadHotspots();
-
-            // Center map on new location
-            if (map) {
-                map.setView([latitude, longitude], 11);
-                updateUserMarker(latitude, longitude);
-            }
+            await changeLocation(latitude, longitude, null, {
+                loadHotspots: true
+            });
         },
         (error) => {
             console.error('Geolocation error:', error);
@@ -1271,16 +1343,9 @@ function renderRecentLocations() {
             const name = btn.dataset.name;
 
             elements.locationDropdown.classList.add('hidden');
+            elements.locationDropdownBtn.setAttribute('aria-expanded', 'false');
 
-            // Reset coastal status for new location
-            store.update({ isCoastalLocation: null, coastType: null });
-            await setLocation(lat, lon, name);
-            await loadWeatherData();
-
-            if (map) {
-                map.setView([lat, lon], 11);
-                updateUserMarker(lat, lon);
-            }
+            await changeLocation(lat, lon, name);
         });
     });
 }
@@ -1359,16 +1424,9 @@ function renderSavedLocations() {
             const name = item.dataset.name;
 
             elements.locationDropdown.classList.add('hidden');
+            elements.locationDropdownBtn.setAttribute('aria-expanded', 'false');
 
-            // Reset coastal status for new location
-            store.update({ isCoastalLocation: null, coastType: null });
-            await setLocation(lat, lon, name);
-            await loadWeatherData();
-
-            if (map) {
-                map.setView([lat, lon], 11);
-                updateUserMarker(lat, lon);
-            }
+            await changeLocation(lat, lon, name);
         });
     });
 
@@ -1419,18 +1477,12 @@ async function handleLocationSearch(e) {
             const name = btn.dataset.name;
 
             elements.locationDropdown.classList.add('hidden');
-            addRecentLocation(lat, lon, name);
+            elements.locationDropdownBtn.setAttribute('aria-expanded', 'false');
 
-            // Reset coastal status for new location
-            store.update({ isCoastalLocation: null, coastType: null });
-            await setLocation(lat, lon, name);
-            await loadWeatherData();
-            await loadHotspots();
-
-            if (map) {
-                map.setView([lat, lon], 11);
-                updateUserMarker(lat, lon);
-            }
+            await changeLocation(lat, lon, name, {
+                addToRecent: true,
+                loadHotspots: true
+            });
         });
     });
 }
@@ -1439,13 +1491,13 @@ async function handleLocationSearch(e) {
 window.loadHotspotWeather = async (lat, lon, name) => {
     if (map) {
         map.closePopup();
-        updateUserMarker(lat, lon);
     }
-    addRecentLocation(lat, lon, name);
-    // Reset coastal status for new location
-    store.update({ isCoastalLocation: null, coastType: null });
-    await setLocation(lat, lon, name);
-    await loadWeatherData();
+    await changeLocation(lat, lon, name, {
+        addToRecent: true,
+        updateMap: false  // Don't recenter - user clicked on map
+    });
+    // Update marker without recentering
+    updateUserMarker(lat, lon);
 };
 
 // Initialize on load
