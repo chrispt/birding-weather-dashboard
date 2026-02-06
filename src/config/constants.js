@@ -34,8 +34,13 @@ export const STORAGE_KEYS = {
     SPEED_UNIT: 'birdingWeather_speedUnit',
     PRESSURE_UNIT: 'birdingWeather_pressureUnit',
     MAP_TILE_MODE: 'birdingWeather_mapTileMode',
-    LAST_LOCATION: 'birdingWeather_lastLocation'
+    LAST_LOCATION: 'birdingWeather_lastLocation',
+    RECENT_LOCATIONS: 'birdingWeather_recentLocations',
+    SAVED_LOCATIONS: 'birdingWeather_savedLocations'
 };
+
+// Location history limits
+export const MAX_RECENT_LOCATIONS = 5;
 
 // Default settings
 export const DEFAULTS = {

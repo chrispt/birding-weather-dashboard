@@ -10,6 +10,7 @@ let userMarker = null;
 let hotspotMarkers = [];
 let currentTileLayer = null;
 let mapStyleControl = null;
+let _onHotspotWeatherRequest = null;
 
 /**
  * Available map tile configurations
@@ -74,6 +75,18 @@ export function initMap() {
     }).addTo(map);
 
     userMarker.bindPopup('<strong>📍 Your Location</strong>').openPopup();
+
+    // Delegated click handler for hotspot popup "Check Weather" buttons
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-hotspot-lat]');
+        if (btn && _onHotspotWeatherRequest) {
+            const lat = parseFloat(btn.dataset.hotspotLat);
+            const lon = parseFloat(btn.dataset.hotspotLon);
+            const name = btn.dataset.hotspotName;
+            closeMapPopup();
+            _onHotspotWeatherRequest(lat, lon, name);
+        }
+    });
 }
 
 /**
@@ -246,12 +259,12 @@ export function updateMapHotspots(hotspots) {
             icon: createMarkerIcon('hotspot')
         }).addTo(map);
 
-        const escapedName = h.name.replace(/'/g, "\\'");
+        const escapedName = h.name.replace(/"/g, '&quot;');
         marker.bindPopup(`
             <strong>${h.name}</strong><br>
             ${h.speciesCount || '?'} species<br>
             <button class="btn btn--primary" style="margin-top:8px;padding:4px 8px;font-size:12px;cursor:pointer;"
-                    onclick="window.loadHotspotWeather(${h.lat}, ${h.lon}, '${escapedName}')">
+                    data-hotspot-lat="${h.lat}" data-hotspot-lon="${h.lon}" data-hotspot-name="${escapedName}">
                 Check Weather
             </button>
         `);
@@ -267,5 +280,13 @@ export function closeMapPopup() {
     if (map) {
         map.closePopup();
     }
+}
+
+/**
+ * Register a callback for when a map popup "Check Weather" button is clicked.
+ * @param {Function} callback - (lat, lon, name) => void
+ */
+export function onHotspotWeatherClick(callback) {
+    _onHotspotWeatherRequest = callback;
 }
 
